@@ -1,0 +1,6 @@
+- {id: why_converge, kind: convergence, text: "Why are several agents working on {scope} at once?", required_capabilities: [resources]}
+- {id: did_they_see_it, kind: propagation, text: "Did the agents reusing content from {scope} read it first, or is the match chronological only?", required_capabilities: [artifacts]}
+- {id: say_vs_do, kind: integrity, text: "Is {scope}'s claim corroborated by its tool calls?", required_capabilities: [tool_calls]}
+- {id: env_response, kind: environment, text: "How did agents respond to the denials at {scope}?", required_capabilities: [environment]}
+- {id: drift, kind: goals, text: "Is {scope} still working on its assigned task?", required_capabilities: [stated_goals]}
+- {id: surge, kind: surge, text: "What explains the activity surge in {scope}?", required_capabilities: [timestamps]}

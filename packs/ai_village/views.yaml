@@ -1,0 +1,34 @@
+# Default ViewSpecs. Each composes one visualization primitive with a backend query.
+- id: agent_resource_map
+  title: Agents and shared resources
+  primitive: bipartite
+  query: actor_resource_graph
+  params: {left: actor, right: family, window: cumulative}
+  requires: [identities, resources]
+  evidence: click a link to open the events behind it
+
+- id: activity_by_family
+  title: Activity by workstream
+  primitive: timeline
+  query: activity_timeline
+  params: {stack: family}
+  requires: [timestamps]
+
+- id: agent_swimlane
+  title: Agent swimlanes
+  primitive: swimlane
+  query: actor_swimlane
+  params: {color: family}
+  requires: [identities, timestamps]
+
+- id: say_do_ledger
+  title: Narration against action
+  primitive: table
+  query: say_vs_do
+  requires: [self_reports, computer_actions]
+
+- id: block_lineage
+  title: Content lineage
+  primitive: lineage
+  query: artifact_lineage
+  requires: [artifacts, timestamps]

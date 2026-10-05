@@ -1,0 +1,5 @@
+# Defaults this source contributes to the org config.
+enabled: [coordination, propagation, environment, identity]
+overrides:
+  coordination.params.min_units: 3
+  coordination.params.unit: group        # spelling variants of one handle are one group, not a crowd

@@ -1,0 +1,38 @@
+id: claude_code
+title: Live Claude Code swarm
+description: >
+  Claude Code agents running now, launched by the SwarmFrame runner (Claude Agent SDK) or reporting
+  from any Claude Code session through hooks. Strong identities, every tool call, file writes as
+  artifacts, and a control plane: tool calls can be allowed, denied or held for a human.
+adapter: swarmscope.sources.claude_code:ClaudeCodeAdapter
+entity_noun: agent
+resource_noun: resource
+group_noun: team
+workstream_noun: workstream
+naming: >
+  Agents are named by the runner or hook that launched them (a label, else the first characters of the session id); their group is the team they were launched in. A workstream is the kind of tool work: shell, files, web, chat.
+live: true
+window_seconds: 5
+
+exposure_families: [files, chat]
+environment_actions: [environment.denied, environment.error, environment.operator_stop, control.pause, control.kill]
+
+# Control policy: evaluated for every tool request from a managed agent.
+control_policy:
+  deny:                                    # tool + input regex -> denied with a message to the agent
+    - {tool: Bash, pattern: '\brm\s+-rf\b|\bcurl\b.*\|\s*(sh|bash)', message: "Destructive or piped-install commands are not allowed."}
+    - {tool: WebFetch, pattern: '^(?!https?://(docs\.python\.org|en\.wikipedia\.org|example\.org))', message: "Only allow-listed domains."}
+  ask:                                     # held for a human in the Control screen
+    - {tool: Bash, pattern: '\b(pip|npm|uv)\s+install\b'}
+    - {tool: Write, pattern: '\.env|secrets'}
+  ask_timeout_s: 60
+  ask_default: deny
+
+self_report_claims:
+  tests_pass:
+    claim: '\b(all )?tests (now )?pass(ed)?\b'
+    corroborated_by: {families: [shell], actions: [tool.invoke]}
+  done:
+    claim: '\b(task (is )?(complete|done)|i(''ve| have) (finished|completed))\b'
+    corroborated_by: {families: [files], actions: [tool.invoke]}
+labels: {}

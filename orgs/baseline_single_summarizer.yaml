@@ -1,0 +1,5 @@
+name: Single global summarizer
+description: One executive reads a digest of recent raw events each period. No monitors, no watchers feeding it, no investigations.
+monitors: []
+investigations: {max_active: 0}
+executive: {strategy: global_summary, cadence_windows: 6}

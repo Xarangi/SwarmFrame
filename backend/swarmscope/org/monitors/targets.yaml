@@ -1,0 +1,11 @@
+id: targets
+title: Targets & methods
+description: Bursts of activity on one target against its own baseline, and method classes new to a target. Works without agent identities.
+requires: [timestamps, resources]
+optional: [techniques, evidence_grades]
+watchers: [resource_burst, rate_change]
+slots: {retrieval: sliding_window, summarization: structured_facts, evaluation: deterministic_rule,
+        escalation: budget_aware, critique: none}
+params: {question_threshold: 0.5}
+tunables: {resource_burst.z: [2, 6], resource_burst.min_events: [4, 40], rate_change.z: [1.5, 6]}
+outputs: [observations, claims, questions]

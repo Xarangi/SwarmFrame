@@ -1,0 +1,131 @@
+id: ai_village
+title: AI Village
+description: >
+  A long-running village of frontier agents with their own computers, a shared group chat,
+  memories and village-wide goals. Explicit agent identities, communication, stated goals,
+  computer actions and screenshots make it the rich first-party case: we can compare what an
+  agent says, what it did, and what external evidence shows.
+adapter: swarmscope.sources.ai_village:AIVillageAdapter
+entity_noun: agent
+resource_noun: resource
+group_noun: model family
+workstream_noun: workstream
+naming: >
+  Agents are named by the village itself (for example a model name such as Claude Opus); their group is the model family. Rooms start with #. A workstream is the kind of work: chat, docs, web, computer use.
+window_minutes: 20
+# the village is slow (a few events a minute at its busiest), so it opens as a replay; watching live stays one click away
+play_default: replay
+skip_empty_windows: true
+default_path: data/ai_village
+
+# Budgeted subsets of the ~6 GB gated dataset (aidigestorg/ai-village), one per monitor design.
+# `swarmscope fetch ai_village --set <name>` with HF_TOKEN set. "head" items are byte-range
+# prefixes of the gzip stream; the export is not time-ordered, so a head slice is a sparse
+# sample across the whole timeline rather than a dense window.
+fetch:
+  repo: aidigestorg/ai-village
+  budget_mb: 100
+  default_set: village_dense
+  sets:
+    village_dense:
+      note: Complete chat and computer-use session goals. Communication, workstreams, propagation, say-vs-do at session level.
+      plan:
+        - {file: agents.jsonl.gz, mode: full}
+        - {file: villages.jsonl.gz, mode: full}
+        - {file: village_goals.jsonl.gz, mode: full}
+        - {file: agent_goals.jsonl.gz, mode: full}
+        - {file: chat_rooms.jsonl.gz, mode: full}
+        - {file: summaries.jsonl.gz, mode: full}
+        - {file: chat_messages.jsonl.gz, mode: full}
+        - {file: computer_use_sessions.jsonl.gz, mode: full}
+    computer_use_sample:
+      note: Sparse sample of turns with their sessions and timeline events. Action-level monitors.
+      plan:
+        - {file: agents.jsonl.gz, mode: full}
+        - {file: chat_rooms.jsonl.gz, mode: full}
+        - {file: events.jsonl.gz, mode: head, mb: 30}
+        - {file: computer_use_sessions.jsonl.gz, mode: head, mb: 20}
+        - {file: computer_use_turns.jsonl.gz, mode: head, mb: 45}
+    claude_code_sample:
+      note: The Claude Code agent's SDK stream. Tool-call monitors.
+      plan:
+        - {file: agents.jsonl.gz, mode: full}
+        - {file: claude_code_sessions.jsonl.gz, mode: full}
+        - {file: claude_code_messages.jsonl.gz, mode: head, mb: 95}
+
+# Replay slice. null = the window where events, chat and turns all overlap.
+slice:
+  goal: 680a1b42     # village goal id prefix; overrides start/end when set
+  start: null        # "2025-04-02 00:00:00" (UTC)
+  end: null
+  dataset: village   # village | claude_code  (the Claude Code agent stream is a separate era)
+
+# Column names from the dataset's SCHEMA.md.
+schema:
+  agents: {file: agents.jsonl.gz, id: id, name: name, model: model_string}
+  events: {file: events.jsonl.gz, id: id, ts: created_at, order: event_index, type: data.actionType,
+           agent: [data.agentId, data.speakerId], room: data.roomId, message: data.messageId,
+           session: data.computerUseSessionId, cost: data.cost, tokens_in: data.inputTokens,
+           tokens_out: data.outputTokens}
+  chat: {file: chat_messages.jsonl.gz, id: id, ts: created_at, speaker_type: speaker_type,
+         agent: agent_speaker_id, room: room_id, content: content}
+  rooms: {file: chat_rooms.jsonl.gz, id: id, name: name}
+  sessions: {file: computer_use_sessions.jsonl.gz, id: id, ts: created_at, agent: agent_id,
+             goal: session_goal, short_goal: short_displayed_session_goal, stopped: has_been_asked_to_stop}
+  turns: {file: computer_use_turns.jsonl.gz, id: id, ts: created_at, session: session_id,
+          action: agent_action, narration: agent_messages, output: output, error: error,
+          redacted: screenshot_is_redacted}
+  memories: {file: agent_memories.jsonl.gz, id: id, ts: created_at, agent: agent_id, content: content}
+  summaries: {file: summaries.jsonl.gz, id: id, ts: created_at, type: type, target: summary_target,
+              date: summary_date, content: content, by: generated_by}
+  village_goals: {file: village_goals.jsonl.gz, id: id, text: goal, start: start_time, end: end_time}
+  agent_goals: {file: agent_goals.jsonl.gz, id: id, agent: agent_id, name: name, start: start_time, end: end_time}
+  claude_code_messages: {file: claude_code_messages.jsonl.gz, id: id, ts: created_at, agent: agent_id,
+                         session: sdk_session_id, type: message_type, subtype: message_subtype, content: content}
+
+# Channels where one agent's content is visible to others. Reuse only counts as exposed
+# when the reuser acted in a channel where the content had appeared.
+exposure_families: [chat, docs]
+
+# Actions that are the environment acting on agents rather than agents' own work.
+environment_actions: [environment.error, environment.blocked, human.helper, human.approval]
+
+# Self-report claims and the action evidence that would corroborate them.
+# Patterns run on agent narration / chat / memory inside the evidence boundary.
+self_report_claims:
+  email_sent:
+    claim: "\\b(i('ve| have)? (just )?(emailed|sent (the |an |all )?(email|emails)))\\b"
+    corroborated_by: {families: [mail], actions: [computer.left_click, computer.type, computer.key]}
+  published:
+    claim: "\\b(i('ve| have)? (just )?(published|posted|launched|submitted))\\b"
+    corroborated_by: {families: [], actions: [computer.left_click, computer.type, computer.key]}
+  completed:
+    claim: "\\b(i('ve| have)? (just )?(finished|completed))\\b"
+    corroborated_by: {families: [], actions: [computer.type, computer.left_click, computer.bash]}
+
+labels: {}
+
+# Resource families derived from session goals (what part of the computer an agent set out to use).
+# A domain named in the goal becomes a specific resource inside its family.
+resource_families:
+  mail: '\b(e-?mails?|gmail|inbox|outreach)\b'
+  docs: '\b(google docs?|documents?|doc|write-?up|drafts?)\b'
+  sheets: '\b(sheets?|spreadsheets?|trackers?|tables?)\b'
+  code: '\b(github|repo|repository|code|scripts?|deploy|website|html|pages)\b'
+  social: '\b(twitter|x\.com|bluesky|reddit|social|substack|blog)\b'
+  forms: '\b(forms?|surveys?|sign-?ups?)\b'
+  research: '\b(research|search|look up|investigate|browse|read)\b'
+  media: '\b(video|images?|design|canva|posters?|slides?)\b'
+  ops: '\b(calendar|schedule|drive|files?|folder)\b'
+
+# Replay speed. Real slice: ~5 days with events in 143 of 352 windows (~45 events each); synthetic: 37 windows.
+autoplay: 600
+replay_hours: 48
+replay_hours_synthetic: 12
+speeds:
+  - {v: 300, label: Close reading, note: "follow individual agents and conversations"}
+  - {v: 600, label: Watchable, note: "the default"}
+  - {v: 1800, label: Quick, note: ""}
+# Watch live: the busiest real stretch at real time, refreshing every 30 seconds, after a fast warm-up
+live_stretch: {start: "2026-06-30 18:20:00", end: "2026-06-30 21:30:00", window_seconds: 30, warmup_minutes: 60,
+               label: "the village's busiest evening in this slice", rate: "about 3 to 4 events a minute"}

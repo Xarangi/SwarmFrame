@@ -1,0 +1,7 @@
+enabled: [coordination, propagation, environment, integrity]
+overrides:
+  coordination.params.unit: actor
+  coordination.params.min_units: 6
+  coordination.params.exclude_families: [shell, search, narration, control, chat]
+  integrity.params.lookback_windows: 9
+  coordination.params.warmup_windows: 6

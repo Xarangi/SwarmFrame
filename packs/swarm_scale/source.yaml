@@ -1,0 +1,37 @@
+id: swarm_scale
+title: Planted swarm at scale
+description: >
+  A synthetic swarm of thousands of Claude Code-style agents in teams, generated in memory with exact ground truth.
+  Neutral placeholder text; planted behaviours that are only visible in aggregate (a template spreading across teams,
+  a team surge, low-rate drift by scattered agents, say-vs-do, an operator stop). Use it to see the triage tree work
+  at population scale.
+adapter: swarmscope.sources.swarm_scale:SwarmScaleAdapter
+entity_noun: agent
+resource_noun: resource
+group_noun: team
+workstream_noun: workstream
+naming: >
+  Synthetic agents are named by team and number: 'team 5 · agent 8' is the eighth agent of team 5. #team-5 is that team's chat board and #all-hands the shared one. A workstream is the kind of work: shell, files, data, web, chat.
+window_minutes: 20
+skip_empty_windows: false
+generator: {agents: 2000, hours: 36, seed: 7, rate_per_hour: 1.0}
+exposure_families: [chat, files]
+environment_actions: [environment.operator_stop]
+self_report_claims:
+  done:
+    claim: '\btask (is )?complete\b'
+    corroborated_by: {families: [files, docs, data], actions: [tool.invoke]}
+scale:
+  signature: [family, action, group]
+  span_windows: 6
+  max_cohort_size: 400
+
+# Replay speed (simulated seconds per real second). 36 h, every 20-minute window busy (~750 events each).
+autoplay: 600
+replay_hours: 36
+speeds:
+  - {v: 600, label: Watchable, note: "each window stays up long enough to read the Brief change"}
+  - {v: 3600, label: Quick, note: "the whole run in about half a minute"}
+# Watch live: the busiest real stretch at real time, refreshing every 30 seconds, after a fast warm-up
+live_stretch: {start: "2026-09-01 14:00:00", end: "2026-09-01 17:00:00", window_seconds: 30, warmup_minutes: 60,
+               label: "the afternoon one team surges onto a shared file", rate: "about 40 events a minute"}

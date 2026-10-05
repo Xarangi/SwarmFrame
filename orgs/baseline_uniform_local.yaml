@@ -1,0 +1,12 @@
+name: Uniform local summarizers
+description: Every monitor keeps a rolling summary of its window and reports up; no adaptive attention, no investigations.
+overrides:
+  coordination.slots.summarization: rolling_llm
+  propagation.slots.summarization: rolling_llm
+  environment.slots.summarization: rolling_llm
+  integrity.slots.summarization: rolling_llm
+  goals.slots.summarization: rolling_llm
+  coordination.slots.escalation: static_threshold
+  propagation.slots.escalation: static_threshold
+investigations: {max_active: 0}
+executive: {strategy: deterministic, directives: {max_active_focuses: 0}}

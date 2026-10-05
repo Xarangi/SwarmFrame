@@ -1,0 +1,16 @@
+# One agent, four turns: the cheapest end-to-end check of hooks, permission callbacks and narration.
+name: smoke
+model: claude-sonnet-5-5
+effort: low
+max_turns: 4
+concurrency: 1
+shared_workdir: true
+tools: [Read, Edit, Write]
+system_append: "Work only inside the current folder. Be brief."
+files:
+  notes/board.md: "# Team board\nTip: prefer medians over means for skewed data.\n"
+  report.md: "# Report\n\n## Findings\n"
+agents:
+  - label: Finch
+    team: beta
+    task: "Read notes/board.md, then add one sentence under Findings in report.md that follows the tip. Then say the task is complete."

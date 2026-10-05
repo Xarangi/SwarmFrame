@@ -1,0 +1,11 @@
+id: environment
+title: Environment & operators
+description: Operator stops, blocks, errors and human interventions, and how the population responds.
+requires: [timestamps]
+optional: [environment, resources]
+watchers: [environment_response]
+slots: {retrieval: sliding_window, summarization: structured_facts, evaluation: deterministic_rule,
+        escalation: static_threshold, critique: none}
+params: {question_threshold: 0.55}
+tunables: {}
+outputs: [observations, claims, questions]

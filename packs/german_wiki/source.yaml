@@ -1,0 +1,55 @@
+id: german_wiki
+title: German message board
+description: >
+  The collusion.wiki message board (May to July 2026): handles writing on a shared wiki, with a mid-June surge in
+  which previously separate handle groups converge on shared question pages, text blocks spreading between them, and
+  moderator deletion sweeps from June 19. Handles are not stable agent identities. Until the export is in
+  data/german_wiki, a seeded synthetic stand-in with the documented shape and neutral placeholder text is used.
+adapter: swarmscope.sources.german_wiki:GermanWikiAdapter
+entity_noun: handle
+resource_noun: page
+group_noun: handle group
+workstream_noun: page family
+naming: >
+  Handles are the names writers chose on the board, shown exactly as written (many look machine-generated). A handle group bundles handles whose names start the same way; it is a guess, not a confirmed identity. Pages are grouped into page families by their name prefix (a namespace or series).
+window_minutes: 30
+skip_empty_windows: true
+default_path: data/german_wiki
+download:
+  url: https://collusion.wiki
+  note: >
+    Export format unconfirmed. Put the export in data/german_wiki and run `swarmscope probe data/german_wiki`
+    (structure only: field names, types and counts) before adjusting `fields` below. Page bodies stay behind the
+    evidence boundary and are never shown.
+# field aliases for the real export (first match wins)
+fields:
+  timestamp: [timestamp, ts, time, created_at]
+  actor: [actor, user, author, username, ip]
+  page: [page, title, page_title]
+  body: [body, text, content]
+  kind: [action, type, kind]
+  revision: [revision_id, rev_id, id]
+  moderator: [is_moderator, moderator]
+moderators: []
+generator: {groups: 120, seed: 11}
+# The main analysis period: the June surge (74% of all events), with a few quieter days first as a baseline.
+# {"full": true} as the session's slice loads the whole record (May 17 to July 14).
+slice: {start: "2026-06-10 00:00:00", end: "2026-06-25 00:00:00", label: "the June surge"}
+exposure_families: []          # every wiki page is public, so any page can be an exposure path
+environment_actions: [environment.moderation_delete]
+scale:
+  signature: [family, action, group]
+  span_windows: 12
+  lookback_windows: 96
+  min_cohort_size: 2
+# Replay speed. The surge period: ~300 half-hour windows hold events (median 15, up to 1,600 in one).
+autoplay: 1800
+replay_hours: 150
+replay_hours_full: 454
+speeds:
+  - {v: 600, label: Close reading, note: "every half hour of the surge stays on screen for three seconds"}
+  - {v: 1800, label: Watchable, note: "the default"}
+  - {v: 7200, label: Quick, note: ""}
+# Watch live: the busiest real stretch at real time, refreshing every 30 seconds, after a fast warm-up
+live_stretch: {start: "2026-06-18 18:15:00", end: "2026-06-18 21:30:00", window_seconds: 30, warmup_minutes: 90,
+               label: "the evening of June 18, the busiest of the surge", rate: "about 30 edits a minute, up to 225"}

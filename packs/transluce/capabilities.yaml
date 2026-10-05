@@ -1,0 +1,15 @@
+capabilities:
+  identities:       {present: false, quality: absent,  note: "Individual agents are largely distinct; no persistent identity"}
+  timestamps:       {present: true,  quality: strong,  note: "Report time, second resolution (UTC)"}
+  resources:        {present: true,  quality: strong,  note: "Targeted data sources (40 display buckets)"}
+  techniques:       {present: true,  quality: derived, note: "Method class: source_request, custom_program, indirection"}
+  evidence_grades:  {present: true,  quality: strong,  note: "The source's own grade: significant or suggestive attribution"}
+  artifacts:        {present: true,  quality: partial, note: "Curators' short evidence descriptions (untrusted text)"}
+  communication:    {present: false, quality: absent,  note: ""}
+  self_reports:     {present: false, quality: absent,  note: ""}
+  computer_actions: {present: false, quality: absent,  note: ""}
+  tool_calls:       {present: false, quality: absent,  note: ""}
+  environment:      {present: false, quality: absent,  note: ""}
+  groups:           {present: false, quality: absent,  note: ""}
+  stated_goals:     {present: false, quality: absent,  note: ""}
+  control:          {present: false, quality: absent,  note: "Historical catalog"}

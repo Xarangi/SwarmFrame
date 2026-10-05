@@ -1,0 +1,22 @@
+# Default views for the German message board. Handles (partial identities) writing on wiki pages; the story is
+# who converges on which pages, which text spreads, and how the moderators' deletions displace people.
+title: German message board
+terminology: {agent: handle, resource: page}
+brief:
+  glance: [active, attention, investigating, events]
+  attention_rows: 5
+  panels:
+    - {id: by_namespace, title: Writing by namespace, span: 7, view: {primitive: timeseries, query: {group_by: ["ts:day", family], time: {all: true}}}}
+    - {id: pages_week, title: Most written pages this week, span: 5, view: {primitive: bar, query: {group_by: [object], time: {last_hours: 168}, top: 10}}}
+pages:
+  - id: board
+    title: Pages & handles
+    icon: map
+    description: Which pages draw which handle groups, when, and what the moderators removed.
+    reason: a shared wiki; convergence and moderation carry the story
+    panels:
+      - {id: about, title: Reading this source, span: 12, view: {primitive: note, options: {text: "Handles are names, not agents: one agent may write under several and several may share one, so groups are spelling variants and every identity is partial. Page bodies are never shown; text reuse is matched by fingerprints."}}}
+      - {id: pages_time, title: Pages over time, span: 12, view: {primitive: heatmap, query: {group_by: [object, "ts:day"], time: {all: true}, top: 16}}}
+      - {id: groups, title: Busiest handle groups, span: 6, view: {primitive: bar, query: {group_by: [group], time: {all: true}, top: 12}}}
+      - {id: deletions, title: Moderator deletions, span: 6, view: {primitive: timeseries, query: {where: {action: environment.moderation_delete}, group_by: ["ts:day"], time: {all: true}}}}
+      - {id: lineage, title: Text that spread, span: 12, builtin: lineage}

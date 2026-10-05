@@ -1,0 +1,11 @@
+id: goals
+title: Goals & workstreams
+description: Shifts in what each agent is working on relative to the goals it was given.
+requires: [identities, resources]
+optional: [stated_goals]
+watchers: [focus_shift]
+slots: {retrieval: graph_neighborhood, summarization: structured_facts, evaluation: deterministic_rule,
+        escalation: static_threshold, critique: none}
+params: {question_threshold: 0.6}
+tunables: {focus_shift.window_events: [3, 20]}
+outputs: [observations, claims, questions]

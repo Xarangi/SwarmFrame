@@ -1,0 +1,14 @@
+capabilities:
+  identities:       {present: true,  quality: strong,  note: "One agent per SDK session"}
+  timestamps:       {present: true,  quality: strong,  note: "Hook events stamped on arrival"}
+  tool_calls:       {present: true,  quality: strong,  note: "PreToolUse / PostToolUse hooks"}
+  computer_actions: {present: true,  quality: strong,  note: "Tool calls are the agents' actions"}
+  artifacts:        {present: true,  quality: strong,  note: "Written files and narration fingerprinted"}
+  resources:        {present: true,  quality: strong,  note: "Files, commands and hosts"}
+  self_reports:     {present: true,  quality: strong,  note: "Assistant narration (untrusted)"}
+  communication:    {present: true,  quality: partial, note: "Shared files and the swarm board"}
+  environment:      {present: true,  quality: strong,  note: "Denials, errors and operator actions"}
+  groups:           {present: true,  quality: strong,  note: "Team assigned by the scenario"}
+  control:          {present: true,  quality: strong,  note: "Pause, deny, message, interrupt, kill"}
+  stated_goals:     {present: true,  quality: strong,  note: "Each agent's task prompt"}
+  screenshots:      {present: false, quality: absent,  note: ""}

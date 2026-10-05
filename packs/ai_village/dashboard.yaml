@@ -1,0 +1,21 @@
+# Default views for AI Village. The Brief's own sections are always there; `brief.panels` are its signature views.
+title: AI Village
+terminology: {agent: agent, resource: resource}
+brief:
+  glance: [active, attention, investigating, coverage]
+  attention_rows: 5
+  panels:
+    - {id: work, title: Work by workstream, span: 7, view: {primitive: timeseries, query: {group_by: ["ts:hour", family], time: {last_hours: 24}}}}
+    - {id: agents, title: Busiest agents today, span: 5, view: {primitive: bar, query: {group_by: [actor], time: {last_hours: 24}}}}
+pages:
+  - id: village
+    title: The village at a glance
+    icon: layers
+    description: Who is working on what, where they talk, and whether what they say matches what they do.
+    reason: a small population with names, rooms and self-reports
+    panels:
+      - {id: who_what, title: Agents by workstream, span: 7, view: {primitive: heatmap, query: {group_by: [actor, family], time: {all: true}, top: 16}}}
+      - {id: rooms, title: Where they talk, span: 5, view: {primitive: bar, query: {where: {family: chat}, group_by: [object], time: {all: true}}}}
+      - {id: population, title: Who works on which resources, span: 7, kind: builtin, builtin: population}
+      - {id: say_do, title: What they said vs what they did, span: 5, kind: builtin, builtin: say_do}
+      - {id: lineage, title: Content reuse, span: 12, kind: builtin, builtin: lineage}

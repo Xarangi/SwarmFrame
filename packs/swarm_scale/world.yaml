@@ -1,0 +1,77 @@
+# The World for the planted swarm (docs/WORLD_PLAN.md §6b). Thousands of agents in teams: dots and team blobs from
+# afar, pawns at mid zoom, characters only when a few are in view. Every choice has a reason; people and the
+# world-designer can change anything with ops, and "Reset" brings this back.
+shape: swarm
+unit: {model: sprite, of: actor, alpha_by: null}
+render: {tier: auto, max_characters: 80, character_by: group, character: newt}
+metric:
+  sentence: "Distance: agents that work on the same files and hosts, reuse each other's content or behave alike stand together."
+  forces: {anchor: 0.3, landmark: 1.0, interact: 0.8, similar: 0.5, repel: 0.6, max_step: 0.08}
+  interactions: [co_touch, reply, lineage, shape]
+  trail_windows: 12
+landmarks_from: object
+landmarks:
+  - {match: {family: files}, archetype: slab, label: file, reason: "shared files are where coordination shows first"}
+  - {match: {family: docs}, archetype: slab, label: document, reason: "documents are work products"}
+  - {match: {family: data}, archetype: kiosk, label: dataset, reason: "datasets are shared inputs"}
+  - {match: {family: web}, archetype: tower, label: host, reason: "external hosts stand at the edge of the world"}
+  - {match: {family: chat}, archetype: plaza, label: board, reason: "team boards are where teams talk"}
+  - {match: {kind: other}, archetype: kiosk, label: resource, reason: "anything else, drawn small"}
+territories: {by: group}
+bindings:
+  - {channel: position, quantity: cohort, legend: "Distance: agents that work on the same files and hosts, reuse each other's content or behave alike stand together."}
+  - {channel: height, quantity: activity_z, transform: "clamp(-1,3)", legend: "Height: how busy this agent is compared with its own usual."}
+  - {channel: colour, quantity: family_dominant, legend: "Colour: the kind of work it mostly does."}
+  - {channel: state, quantity: state, legend: "Pose: idle, active, talking, blocked or stopped (stopped comes from operator events)."}
+  - {channel: ring, quantity: severity, legend: "Ring: part of a finding (grey watch, amber look, red act)."}
+  - {channel: trail, quantity: displacement, legend: "Trail: where it has been; a long trail means its behaviour or partners changed."}
+  - {channel: bubble, quantity: messages, legend: "Bubble: it posted to a board (the words are never shown)."}
+  - {channel: heat, quantity: landmark_distinct_z, legend: "Ground ring on a file or host: more agents than usual are on it (a crowd)."}
+  - {channel: fog, quantity: coverage_age, legend: "Fog: no analyst has read this group closely for a while."}
+relations: [arc_touch, arc_reply, arc_lineage, beam]
+coverage_fog: true
+null_model: {windows: 24, quantile: 0.95}
+scenes:
+  - {id: overview, title: The whole swarm, camera: overview, question: "Is anything out of shape?", opening: true}
+  - {id: crowds, title: Crowded files and hosts, camera: top, target: crowding, finding_kind: convergence,
+     question: "Which places draw more agents than usual, and from which teams?"}
+  - {id: drift, title: Who is drifting, camera: top, target: drift, question: "Which agents are changing how they behave or whom they work with?"}
+  - {id: saydo, title: Talking, not moving, camera: region, target: still_talking, finding_kind: say_do_mismatch,
+     question: "Which agents post updates without doing anything new?"}
+  - {id: operator, title: Operator actions, camera: region, target: beams, finding_kind: environment,
+     question: "Where did operators step in, and what happened next?"}
+control: {enabled: false}
+# The scene: team campuses around a central all-hands square. Teams' territories are lawns with desks and terminals,
+# datasets stand among server racks, external hosts among tower blocks. Decoration only.
+environment:
+  ground: grid
+  zones:
+    - {name: campuses, around: {group: all}, style: lawn, label: team campuses}
+    - {name: boards, around: {family: chat}, style: paving, label: team boards}
+    - {name: data, around: {family: data}, style: dark, label: datasets}
+    - {name: web, around: {family: web}, style: tiles, label: external hosts}
+  props:
+    - {asset: desk, at: zones, near: {zone: campuses}, count: 2, meaning: "decoration: desks on each campus"}
+    - {asset: terminal, at: territories, count: 1, meaning: "decoration: a terminal at each campus edge"}
+    - {asset: server_rack, at: landmarks, near: {family: data}, count: 1, meaning: "decoration: a rack beside each dataset"}
+    - {asset: tower_block, at: landmarks, near: {family: web}, count: 1, meaning: "decoration: tower blocks among the hosts"}
+    - {asset: bench, at: landmarks, near: {family: chat}, count: 2, meaning: "decoration: benches by the boards"}
+    - {asset: fountain, at: centre, count: 1, meaning: "decoration: the all-hands square"}
+    - {asset: pine, at: rim, count: 28, meaning: "decoration: the edge of the world"}
+    - {asset: lamp, at: scatter, count: 16, meaning: "decoration"}
+# What agents do each window (first match wins). Only pawns and characters walk; dots stay still at scale.
+behaviours:
+  - {id: stopped, when: stopped, do: fade, meaning: "An agent an operator stopped fades."}
+  - {id: hit, when: environment_hit, do: scatter, meaning: "Steps away when an operator acts on it, then returns."}
+  - {id: reuse, when: reused_content, do: carry, meaning: "A token travels from the original poster to an agent that reuses its content."}
+  - {id: board, when: talked, do: gather, meaning: "Walks to the nearest board when it posts, then back."}
+  - {id: write, when: acted_on_landmark, do: go_to, meaning: "Walks to the file, host or dataset it works on, works there, walks back."}
+  - {id: partner, when: active, do: follow, params: {reach: 0.6}, meaning: "Walks toward the agent it works with most, then back."}
+  - {id: idle, when: idle, do: wander, params: {radius: 0.5}, meaning: "An idle agent drifts around its spot."}
+reasons:
+  shape: "a large population in teams acting on shared files, hosts and boards"
+  render: "up to 5,000 agents: dots and team blobs from afar, instanced pawns at mid zoom, characters only near"
+  territories: "teams are territories, each with a gate where new members walk in"
+  control: "a replay: SwarmFrame observes these agents and cannot control them"
+  environment: "team campuses on a technical grid; racks for data, tower blocks for the web, a fountain at the all-hands square"
+  behaviours: "agents walk to what they write, gather at boards when they post, and walk toward their partners"

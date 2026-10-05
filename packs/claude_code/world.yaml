@@ -1,0 +1,72 @@
+# The World for a live Claude Code swarm (docs/WORLD_PLAN.md §6b, preset 5). The village shape plus control:
+# files are slabs, tools colour the agents, denials show as blocked, and clicking an agent offers the Control
+# page's actions (with the same approval rules).
+shape: swarm_control
+unit: {model: sprite, of: actor, alpha_by: null}
+render: {tier: auto, max_characters: 80, character_by: group, character: robot}
+metric:
+  sentence: "Distance: agents that edit the same files and run the same kinds of tools stand together."
+  forces: {anchor: 0.3, landmark: 1.1, interact: 0.8, similar: 0.5, repel: 0.6, max_step: 0.1}
+  interactions: [co_touch, reply, lineage, shape]
+  trail_windows: 12
+landmarks_from: object
+landmarks:
+  - {match: {family: files}, archetype: slab, label: file, reason: "files are what Claude Code agents edit"}
+  - {match: {family: docs}, archetype: slab, label: document, reason: "documents are files too"}
+  - {match: {family: web}, archetype: tower, label: site, reason: "fetched sites stand at the edge"}
+  - {match: {family: shell}, archetype: kiosk, label: command target, reason: "what shell commands touch"}
+  - {match: {family: chat}, archetype: plaza, label: channel, reason: "where agents message each other"}
+  - {match: {kind: other}, archetype: kiosk, label: resource, reason: "anything else, drawn small"}
+territories: {by: group}
+bindings:
+  - {channel: position, quantity: cohort, legend: "Distance: agents that edit the same files and run the same kinds of tools stand together."}
+  - {channel: height, quantity: activity_z, transform: "clamp(-1,3)", legend: "Height: tool calls now, compared with the agent's own usual."}
+  - {channel: colour, quantity: family_dominant, legend: "Colour: the kind of tool it mostly uses."}
+  - {channel: state, quantity: state, legend: "Pose: working, talking, blocked (denials), paused or stopped (from the control plane)."}
+  - {channel: ring, quantity: severity, legend: "Ring: part of a finding (grey watch, amber look, red act)."}
+  - {channel: trail, quantity: displacement, legend: "Trail: where it has been; a long trail means it moved to other files or tools."}
+  - {channel: heat, quantity: landmark_distinct_z, legend: "Ground ring on a file: more agents than usual are editing it."}
+  - {channel: fog, quantity: coverage_age, legend: "Fog: no analyst has read this group closely for a while."}
+relations: [arc_touch, arc_reply, beam]
+coverage_fog: true
+null_model: {windows: 24, quantile: 0.95}
+scenes:
+  - {id: overview, title: The swarm at work, camera: overview, question: "Is anything out of shape?", opening: true}
+  - {id: crowds, title: Contested files, camera: top, target: crowding, finding_kind: convergence,
+     question: "Which files have more agents on them than usual?"}
+  - {id: blocked, title: Blocked and waiting, camera: region, target: blocked, question: "Which agents are stuck on denials or waiting for approval?"}
+  - {id: operator, title: Operator actions, camera: region, target: beams, finding_kind: environment,
+     question: "Where did someone pause or stop agents, and what happened next?"}
+control: {enabled: true}
+# The scene: a workshop. Shell targets are terminal benches, files and documents are bookshelves, the web is a tower
+# block outside the fence. Decoration only.
+environment:
+  ground: plaza_tiles
+  zones:
+    - {name: bench, around: {family: shell}, style: dark, label: shell}
+    - {name: library, around: {family: [files, docs]}, style: wood, label: files and docs}
+    - {name: channels, around: {family: chat}, style: paving, label: channels}
+    - {name: outside, around: {family: web}, style: lawn, label: the web}
+  props:
+    - {asset: terminal, at: landmarks, near: {family: shell}, count: 2, meaning: "decoration: terminals at the shell bench"}
+    - {asset: bookshelf, at: landmarks, near: {family: files}, count: 1, meaning: "decoration: a shelf beside each file"}
+    - {asset: bookshelf, at: landmarks, near: {family: docs}, count: 2, meaning: "decoration: shelves beside each document"}
+    - {asset: tower_block, at: landmarks, near: {family: web}, count: 1, meaning: "decoration: the web is a tower outside"}
+    - {asset: bench, at: landmarks, near: {family: chat}, count: 2, meaning: "decoration: benches by the channels"}
+    - {asset: crate_stack, at: scatter, count: 8, meaning: "decoration"}
+    - {asset: lamp, at: scatter, count: 8, meaning: "decoration"}
+    - {asset: fence, at: rim, count: 18, meaning: "decoration: the workshop wall"}
+# What agents do each window (first match wins).
+behaviours:
+  - {id: stopped, when: stopped, do: fade, meaning: "A stopped robot fades."}
+  - {id: paused, when: paused, do: stay_home, meaning: "A paused or denied robot waits where it is."}
+  - {id: hit, when: environment_hit, do: scatter, params: {radius: 1.0}, meaning: "Steps back when an operator acts on it, then returns."}
+  - {id: chat, when: talked, do: gather, meaning: "Walks to a channel when it messages another agent, then back."}
+  - {id: tool, when: acted_on_landmark, do: go_to, meaning: "Walks to the file, command target or site it uses, works there, walks back."}
+  - {id: idle, when: idle, do: wander, params: {radius: 0.5}, meaning: "An idle robot drifts around its spot."}
+reasons:
+  shape: "a live swarm with a control plane attached"
+  render: "robots for Claude Code agents; pawns and dots when there are many"
+  control: "the control plane is attached: pause, interrupt, message and stop from the World, with approvals"
+  environment: "a workshop: terminals for the shell, shelves for files and docs, the web outside the fence"
+  behaviours: "robots walk to the tools and files they use; stopped robots fade; paused ones wait"

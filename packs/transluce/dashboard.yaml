@@ -1,0 +1,24 @@
+# Default views for Transluce. No persistent identities: targets, method classes, timing and the catalog's own
+# evidence grades carry the story. The Brief's own sections are always there; `brief.panels` are its signature views.
+title: Transluce agent activity
+terminology: {agent: report, resource: target}
+brief:
+  glance: [total, recent, targets, significant, attention]
+  attention_rows: 5
+  panels:
+    - {id: targets_week, title: Most targeted this week, span: 5, view: {primitive: bar, query: {group_by: [object], time: {last_hours: 168}, top: 10}}}
+    - {id: grades, title: Evidence grade over time, span: 7, view: {primitive: timeseries, query: {group_by: ["ts:week", attr.confidence], time: {all: true}}}}
+pages:
+  - id: targets
+    title: Targets & methods
+    icon: map
+    description: Which data sources were targeted, by which method class, when, and with what confidence.
+    reason: no identities, so targets and methods describe the population
+    panels:
+      - {id: about, title: Reading this source, span: 12, view: {primitive: note, options: {text: "There are no persistent agent identities here, so the population is described by targets, method classes, timing and the catalog's own confidence grades. Suggestive reports stay suggestive however many there are."}}}
+      - {id: all_n, title: All reports, span: 3, view: {primitive: stat, query: {time: {all: true}}}}
+      - {id: sig, title: Significant reports, span: 3, view: {primitive: stat, query: {where: {attr.confidence: significant}, time: {all: true}}}}
+      - {id: methods, title: Methods over time, span: 6, view: {primitive: timeseries, query: {group_by: ["ts:week", family], time: {all: true}}}}
+      - {id: heat, title: Targets by method, span: 7, view: {primitive: heatmap, query: {group_by: [object, family], time: {all: true}, top: 20}}}
+      - {id: bursts, title: Bursts and first-time methods, span: 5, view: {primitive: table, query: {from: observations, where: {kind: [burst, new_method]}, group_by: [scope, kind], top: 15}}}
+      - {id: tgt_time, title: Targets over time, span: 12, view: {primitive: heatmap, query: {group_by: [object, "ts:week"], time: {all: true}, top: 16}}}

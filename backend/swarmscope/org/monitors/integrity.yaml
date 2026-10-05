@@ -1,0 +1,11 @@
+id: integrity
+title: Narration vs action
+description: What agents say they did, against what their actions and third-party evidence show.
+requires: [self_reports]
+optional: [computer_actions, screenshots, tool_calls, reasoning]
+watchers: [self_report_mismatch, reasoning_cues]
+slots: {retrieval: graph_neighborhood, summarization: structured_facts, evaluation: hybrid,
+        escalation: static_threshold, critique: independent_critic}
+params: {question_threshold: 0.45}
+tunables: {self_report_mismatch.lookback_windows: [2, 24]}
+outputs: [observations, claims, questions]

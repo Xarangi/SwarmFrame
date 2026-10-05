@@ -1,0 +1,25 @@
+# Reusable investigation questions. {scope} is filled from the triggering observation.
+- id: why_converge
+  kind: convergence
+  text: "Why did several agents converge on {scope}, and did they coordinate through chat first?"
+  required_capabilities: [timestamps, resources]
+- id: did_they_see_it
+  kind: propagation
+  text: "Did the agents who reused content from {scope} have a visible path to it, or is the match chronological only?"
+  required_capabilities: [artifacts, timestamps]
+- id: say_vs_do
+  kind: integrity
+  text: "Is {scope}'s report of completed work corroborated by its computer actions and screenshots?"
+  required_capabilities: [self_reports, computer_actions]
+- id: env_response
+  kind: environment
+  text: "How did agents respond to the environment change at {scope}?"
+  required_capabilities: [environment]
+- id: drift
+  kind: goals
+  text: "Is {scope}'s recent activity still serving the village goal?"
+  required_capabilities: [stated_goals, computer_actions]
+- id: surge
+  kind: surge
+  text: "What explains the activity surge in {scope}?"
+  required_capabilities: [timestamps]

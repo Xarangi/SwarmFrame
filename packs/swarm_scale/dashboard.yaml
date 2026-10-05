@@ -1,0 +1,31 @@
+# Default views for the planted swarm. The Brief (status, glance numbers, ranked attention list, what changed) is
+# always there; `brief.panels` are its signature views. `pages` appear under Activity. Everything here is a starting
+# point: people and the composer add, remove and rearrange freely, and "Reset this page" brings these back.
+title: Planted swarm at scale
+terminology: {agent: agent, resource: resource}
+brief:
+  glance: [active, attention, investigating, coverage]
+  attention_rows: 5
+  panels:
+    - {id: work, title: Work by workstream, span: 7, view: {primitive: timeseries, query: {group_by: ["ts:hour", family], time: {last_hours: 24}}}}
+    - {id: crowds, title: Shared resources drawing a crowd, span: 5, view: {primitive: bar, query: {metric: "distinct:actor", group_by: [object], time: {last_hours: 6}}}}
+pages:
+  - id: teams
+    title: Teams at scale
+    icon: layers
+    description: Thousands of agents in teams. Which teams are busy, what they work on, and which shared resources draw a crowd.
+    reason: the swarm is organised in teams
+    panels:
+      - {id: agents_n, title: Agents active today, span: 3, view: {primitive: stat, query: {metric: "distinct:actor", time: {last_hours: 24}}, options: {unit: distinct agents}}}
+      - {id: teams, title: Busiest teams, span: 4, view: {primitive: bar, query: {group_by: [group], time: {last_hours: 6}}}}
+      - {id: team_size, title: Active members per team, span: 5, view: {primitive: bar, query: {metric: "distinct:actor", group_by: [group], time: {last_hours: 24}}}}
+      - {id: team_work, title: Teams by workstream, span: 12, view: {primitive: heatmap, query: {group_by: [group, family], time: {all: true}, top: 20}}}
+  - id: activity
+    title: What the agents are doing
+    icon: layers
+    description: Workstreams over time, the busiest agents and resources.
+    reason: the stream names its agents and resources
+    panels:
+      - {id: timeline, title: Activity by workstream, span: 12, kind: builtin, builtin: timeline}
+      - {id: top_act, title: Busiest agents, span: 6, view: {primitive: bar, query: {group_by: [actor], time: {last_hours: 6}}}}
+      - {id: top_res, title: Busiest resources, span: 6, view: {primitive: bar, query: {group_by: [object], time: {last_hours: 6}}}}

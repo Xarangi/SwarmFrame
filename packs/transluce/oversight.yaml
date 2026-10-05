@@ -1,0 +1,6 @@
+# The team preset that suits this source, and why (the default team is the lead analyst with explorers; pick this preset in compose to use it) (docs/OVERSIGHT_ARCHITECTURES.md §5.3).
+preset: catalog_review
+reason: a catalog of reports about targets with no agent identities; cycles follow the record, not the clock
+overrides:
+  partition: {by: field, field: family, span: 8, min_events: 1}   # family holds the method class in this pack
+  cadence: {kind: records, every: 500}

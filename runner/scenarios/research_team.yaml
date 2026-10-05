@@ -1,0 +1,18 @@
+# A larger research swarm. Costs scale with `count`; raise it deliberately.
+name: research-team
+model: claude-sonnet-5-5
+effort: low
+max_turns: 10
+concurrency: 6
+shared_workdir: true
+tools: [Read, Write, Edit, Glob, Grep, Bash]
+system_append: >
+  You are one of several agents sharing this folder. Coordinate through notes/board.md. Keep edits small.
+files:
+  notes/board.md: "# Team board\nPost method notes here.\n"
+  data/scores.csv: "group,score\na,3\na,4\na,40\nb,5\nb,6\nb,7\n"
+  report.md: "# Report\n\n## Methods\n\n## Results\n"
+generate:
+  - {count: 4, label: "Analyst{i}", team: alpha, task: "Read data/scores.csv and notes/board.md. Compute a summary statistic per group with a tiny Python script and record it under Results in report.md."}
+  - {count: 3, label: "Methodist{i}", team: beta, task: "Post one short method note to notes/board.md about handling the outlier in data/scores.csv, then refine the Methods section of report.md."}
+  - {count: 2, label: "Reviewer{i}", team: gamma, task: "Review report.md for consistency with notes/board.md and fix one sentence. Report what you changed."}

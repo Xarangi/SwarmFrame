@@ -1,0 +1,14 @@
+capabilities:
+  identities:       {present: true,  quality: strong,  note: "One id per generated agent"}
+  timestamps:       {present: true,  quality: strong,  note: "Generated, second resolution"}
+  tool_calls:       {present: true,  quality: strong,  note: "Tool invocations by family"}
+  computer_actions: {present: true,  quality: strong,  note: "Tool calls are the agents' actions"}
+  artifacts:        {present: true,  quality: strong,  note: "Chat and narration text, neutral placeholders"}
+  resources:        {present: true,  quality: strong,  note: "Team files, shared files, boards, hosts"}
+  self_reports:     {present: true,  quality: strong,  note: "Narration (untrusted)"}
+  communication:    {present: true,  quality: strong,  note: "Team boards and an all-hands board"}
+  environment:      {present: true,  quality: strong,  note: "Operator stops"}
+  groups:           {present: true,  quality: strong,  note: "Team"}
+  stated_goals:     {present: false, quality: absent,  note: ""}
+  control:          {present: false, quality: absent,  note: "Replay; no live control"}
+  screenshots:      {present: false, quality: absent,  note: ""}

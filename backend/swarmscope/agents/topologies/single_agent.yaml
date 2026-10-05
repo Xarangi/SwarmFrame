@@ -1,0 +1,39 @@
+title: Single agent with tools
+description: >
+  One agent with direct evidence tools and no sub-agents. The baseline for "does a team beat one agent?"
+root: director
+
+roles:
+  director:
+    title: Lone analyst
+    kind: director
+    delegate: true
+    description: Reads the evidence itself and writes the executive state.
+    prompt: prompts/director.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 16
+    tools: ["evidence.*"]
+    raw_access: true
+    output: director
+    memory: state
+    scope: population
+
+divisions:
+  strategy: by_resource_cluster
+  max: 8
+  min_events: 6
+
+scaling:
+  max_agents: 1
+  max_depth: 0
+  max_concurrent_runs: 1
+  budget_usd_per_cycle: 0.5
+  budget_usd_total: 3.0
+
+cycle: [root]
+
+maintain:
+  cover_divisions_with: null
+  retire_quiet_cycles: 0
+  split_when_events_over: null

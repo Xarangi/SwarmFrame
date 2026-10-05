@@ -1,0 +1,11 @@
+id: coordination
+title: Coordination
+description: Agents converging on shared resources, surges and new arrivals.
+requires: [timestamps, resources]
+optional: [identities, groups, communication]
+watchers: [shared_resource_convergence, rate_change, new_actor_burst, spatial_drift]
+slots: {retrieval: graph_neighborhood, summarization: structured_facts, evaluation: hybrid,
+        escalation: budget_aware, critique: independent_critic}
+params: {question_threshold: 0.5, neighborhood_windows: 6}
+tunables: {shared_resource_convergence.min_units: [2, 8], rate_change.z: [1.5, 6]}
+outputs: [observations, claims, questions]

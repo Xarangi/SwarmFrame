@@ -1,0 +1,17 @@
+capabilities:
+  identities:       {present: true,  quality: strong,  note: "Explicit agent records with names and models"}
+  timestamps:       {present: true,  quality: strong,  note: "created_at on every table (UTC)"}
+  communication:    {present: true,  quality: strong,  note: "Group chat rooms with speakers"}
+  artifacts:        {present: true,  quality: strong,  note: "Chat, narration, memories and typed text fingerprinted into blocks"}
+  resources:        {present: true,  quality: derived, note: "Derived from computer-use URLs/apps and chat rooms"}
+  computer_actions: {present: true,  quality: strong,  note: "Turn-by-turn computer use"}
+  stated_goals:     {present: true,  quality: strong,  note: "Village goals, agent goals and session goals"}
+  reasoning:        {present: true,  quality: strong,  note: "Each action's raw model output carries the agent's private reasoning (untrusted)"}
+  self_reports:     {present: true,  quality: strong,  note: "Chat, narration and memories are agent-authored, untrusted"}
+  screenshots:      {present: true,  quality: strong,  note: "Ground truth per turn; referenced, never inlined"}
+  memories:         {present: true,  quality: strong,  note: "Long-term memory consolidations"}
+  summaries:        {present: true,  quality: weak,    note: "LLM-generated without computer-use contents; can be wrong"}
+  environment:      {present: true,  quality: partial, note: "Blocks and errors visible through tool output"}
+  groups:           {present: true,  quality: derived, note: "Model family"}
+  tool_calls:       {present: false, quality: absent,  note: "Computer actions stand in for tool calls"}
+  control:          {present: false, quality: absent,  note: "Historical replay; no live control"}

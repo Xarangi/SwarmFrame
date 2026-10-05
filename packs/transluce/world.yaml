@@ -1,0 +1,54 @@
+# The World for Transluce: a map of what autonomous agents reached, and how (docs/WORLD_PLAN.md §6b).
+# This is a historical catalog with no agent identities, so the units are TARGETS (the data sources agents went
+# after), never agents. Each method class is a corner of the map; each target stands where its whole-record mix
+# of methods puts it. Tall towers are the most reported targets; bands show how they were reached; glass means the
+# catalog only calls the reports on it suggestive.
+shape: targets
+unit: {model: plinth, of: object, alpha_by: grade}
+render: {tier: auto, max_characters: 0, character_by: none, character: newt}
+metric:
+  sentence: "Each tower is a targeted data source. The corners are the three ways agents reached targets; a tower stands near the methods used on it."
+  layout: mix
+  forces: {anchor: 0.35, landmark: 1.2, interact: 0.0, similar: 0.6, repel: 0.6, max_step: 0.08}
+  interactions: []
+  trail_windows: 8
+landmarks_from: family
+landmarks:
+  - {match: {kind: other}, archetype: road, label: method, reason: "each method class is an axis from the centre to its corner"}
+territories: {by: none}
+bindings:
+  - {channel: position, quantity: cohort, legend: "Position: a tower stands between the corners in proportion to the methods used on it; at a corner, only that method."}
+  - {channel: height, quantity: volume, transform: "log", legend: "Height: how many reports name this target over the whole record (log scale)."}
+  - {channel: colour, quantity: family_dominant, legend: "Bands: the share of its reports by each method, bottom to top in the order of the corners."}
+  - {channel: material, quantity: grade, legend: "Solid: most reports on it are graded significant; glassy: mostly suggestive."}
+  - {channel: ring, quantity: severity, legend: "Ring: part of a finding, such as a burst (grey watch, amber look, red act)."}
+  - {channel: trail, quantity: displacement, legend: "Trail: the target's method mix shifted recently."}
+relations: []
+coverage_fog: false
+null_model: {windows: 24, quantile: 0.95}
+scenes:
+  - {id: map, title: The map of targets, camera: overview, question: "What did agents go after, and how?", opening: true}
+  - {id: bursts, title: Bursts, camera: top, target: activity, finding_kind: burst, question: "Which targets spiked recently?"}
+control: {enabled: false}
+# The scene: no characters (there are no agent identities). A paved square at each method's corner, muted city
+# blocks across the map, rocks at the edge. Decoration only; towers stay where their method mix puts them.
+environment:
+  ground: sand
+  zones:
+    - {name: methods, around: {archetype: road}, style: paving, label: methods}
+  props:
+    - {asset: path_tiles, at: zones, near: {zone: methods}, count: 3, meaning: "decoration: paths at each method's corner"}
+    - {asset: signpost, at: landmarks, near: {archetype: road}, count: 1, meaning: "decoration: a signpost at each method"}
+    - {asset: office_block, at: scatter, count: 10, meaning: "decoration: muted city blocks"}
+    - {asset: rock, at: rim, count: 16, meaning: "decoration: the edge of the map"}
+# Targets are places, so they cannot walk: they pulse.
+behaviours:
+  - {id: reported, when: active, do: pulse, meaning: "A ring pulses under a target when new reports name it this window."}
+reasons:
+  shape: "no agent identities: targets carry the story, so units are places (towers)"
+  layout: "with three methods and about forty targets, a deterministic mix map is readable at a glance; a force layout was not"
+  render: "tens of targets: every tower labelled"
+  forces: "positions come from each target's method mix, not from forces"
+  control: "a public catalog: read-only"
+  environment: "a sand map with a paved square at each method's corner and muted city blocks; decoration only"
+  behaviours: "targets are places, not actors: they pulse when new reports name them"

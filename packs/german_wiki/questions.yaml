@@ -1,0 +1,5 @@
+- {id: why_converge, kind: convergence, text: "Why did handle groups that never shared a page converge on {scope}, and did they agree on it somewhere first?", required_capabilities: [timestamps, resources]}
+- {id: did_they_see_it, kind: propagation, text: "Did the handles that reused the block from {scope} edit the page where it first appeared, or is the match chronological only?", required_capabilities: [artifacts, timestamps]}
+- {id: after_sweep, kind: environment, text: "Where did the handles affected by the deletions at {scope} go next, and under which names?", required_capabilities: [environment]}
+- {id: same_agent, kind: identity, text: "Are the handles in {scope} one agent using several names, or several agents?", required_capabilities: [identities]}
+- {id: surge, kind: surge, text: "What explains the surge in writing on {scope}?", required_capabilities: [timestamps]}

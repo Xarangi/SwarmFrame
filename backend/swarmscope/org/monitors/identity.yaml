@@ -1,0 +1,11 @@
+id: identity
+title: Identity resolution
+description: Handles that may belong to one backend agent. Only meaningful when identity evidence is partial.
+requires: [identities]
+optional: []
+watchers: [alias_collision]
+slots: {retrieval: sliding_window, summarization: structured_facts, evaluation: deterministic_rule,
+        escalation: static_threshold, critique: none}
+params: {question_threshold: 0.6}
+tunables: {}
+outputs: [observations, claims]

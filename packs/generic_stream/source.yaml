@@ -1,0 +1,23 @@
+id: generic_stream
+title: Linked event stream
+description: >
+  Any swarm's events, posted as JSON to /ingest/events. Nothing is declared up front: SwarmFrame reads what arrives,
+  infers what the stream can tell us (identities, resources, text, chat, tool calls, operator actions), turns the
+  matching monitors on, and composes the dashboard around it.
+adapter: swarmscope.sources.generic_stream:GenericStreamAdapter
+entity_noun: agent
+resource_noun: resource
+group_noun: group
+workstream_noun: workstream
+naming: >
+  Names are whatever your stream sends as actor_label (else the actor id); groups come from the group field. A workstream is the family field.
+live: true
+control: false
+infer_capabilities: true
+window_seconds: 5
+exposure_families: [chat, files]
+environment_actions: [environment.operator_stop]
+self_report_claims:
+  done:
+    claim: '\btask (is )?complete\b'
+    corroborated_by: {families: [files, docs, data], actions: [tool.invoke]}

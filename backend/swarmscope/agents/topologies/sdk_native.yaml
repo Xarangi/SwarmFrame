@@ -1,0 +1,59 @@
+title: One session with native Claude Code subagents
+description: >
+  The Director runs as a single Claude Code session and delegates to native subagents through the Task tool
+  (Agent SDK AgentDefinition). Subagents are ephemeral and return text inside the session; nothing persists
+  between cycles except the Director's state. Compare with the managed hierarchy.
+root: director
+
+roles:
+  director:
+    title: Director
+    kind: director
+    delegate: true
+    description: Delegates reading to native subagents, then writes the executive state.
+    prompt: prompts/director.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 20
+    tools: [evidence.observations, evidence.timeline, evidence.query_events]
+    output: director
+    memory: session
+    scope: population
+    native_subagents: [division_reader, integrity_reader]
+
+helpers:
+  division_reader:
+    description: Summarises what a named group of agents did recently, citing event ids.
+    prompt: >
+      You are given a group of agents or resources. Use query_events and observations to summarise what they did
+      recently in three sentences, citing event ids.
+    tools: [evidence.query_events, evidence.observations, evidence.timeline]
+    model: sonnet
+    max_turns: 6
+  integrity_reader:
+    description: Checks whether an agent's claim of completed work matches its recorded actions.
+    prompt: >
+      Compare the agent's self-reported completion with its recorded actions. State what you searched and whether
+      the record corroborates the claim.
+    tools: [evidence.query_events, evidence.events_by_id, evidence.read_raw]
+    model: sonnet
+    max_turns: 6
+
+divisions:
+  strategy: by_resource_cluster
+  max: 8
+  min_events: 6
+
+scaling:
+  max_agents: 1
+  max_depth: 0
+  max_concurrent_runs: 1
+  budget_usd_per_cycle: 1.0
+  budget_usd_total: 4.0
+
+cycle: [root]
+
+maintain:
+  cover_divisions_with: null
+  retire_quiet_cycles: 0
+  split_when_events_over: null

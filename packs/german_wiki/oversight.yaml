@@ -1,0 +1,5 @@
+# The team preset that suits this source, and why (the default team is the lead analyst with explorers; pick this preset in compose to use it) (docs/OVERSIGHT_ARCHITECTURES.md §5.2).
+preset: board_watch
+reason: handles are partial identities on shared pages; namespaces are the stable structure and the moderators are the environment
+overrides:
+  partition: {by: field, field: family, span: 4, min_events: 1}

@@ -1,0 +1,4 @@
+name: Deterministic only
+description: Watchers and rule-based monitors; a rule-based executive; no LLM anywhere.
+llm: {mode: stub}
+executive: {strategy: deterministic}

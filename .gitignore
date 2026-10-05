@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+frontend/node_modules/
+frontend/dist/
+.pytest_cache/
+.ruff_cache/
+*.bak
+*.tsbuildinfo
+# machine-specific: written by `swarmscope channel-setup`
+.mcp.json
+# datasets, runs, saved dashboards and the channel token all live under data/ (ignored above)
+*.egg-info/

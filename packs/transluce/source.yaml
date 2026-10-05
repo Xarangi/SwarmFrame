@@ -1,0 +1,43 @@
+id: transluce
+title: Transluce agent activity
+description: >
+  URLQuery scan reports attributed to autonomous agents (Transluce, Nov 2025 to Sep 2026): about 37,600 included
+  reports graded significant or suggestive, each with a method class and a targeted data source. There are no
+  persistent agent identities, so the population is described by targets, methods, timing and the source's own
+  confidence grades. The public package holds report links and metadata only.
+adapter: swarmscope.sources.transluce:TransluceAdapter
+entity_noun: report
+resource_noun: target
+group_noun: group
+workstream_noun: method
+naming: >
+  Reports have no author identity. Targets are the data sources a scan reached (a website or service). A method is how it was reached; grades (significant, suggestive) are Transluce's own confidence.
+window_minutes: 1440
+skip_empty_windows: true
+# a historical record, not a live swarm: the Brief summarises the whole record and the World maps targets
+catalog: true
+default_path: data/transluce
+download:
+  url: https://transluce.org/data/urlquery-agent-activity-2026-09-23.zip
+  size_mb: 4.6
+  note: Public research package; report links and metadata only.
+slice:
+  dispositions: [included]
+scale:
+  unit: object
+  signature: [family, attr:confidence]
+  span_windows: 7
+  lookback_windows: 60
+  recluster_every: 3
+  min_cohort_size: 1
+
+# Replay speed. A catalog: 148 days hold reports, from tens to over 2,000 a day.
+autoplay: 86400
+replay_hours: 3552
+speeds:
+  - {v: 86400, label: Day by day, note: "watch the record build up and the bursts arrive"}
+  - {v: 604800, label: Week by week, note: ""}
+  - {v: max, label: All at once, note: "load the whole record; the Brief summarises it"}
+# Watch live: the busiest real stretch at real time, refreshing every 30 seconds, after a fast warm-up
+live_stretch: {start: "2026-05-17 02:00:00", end: "2026-05-17 05:00:00", window_seconds: 30, warmup_minutes: 360,
+               label: "the busiest night of reports, May 17", rate: "about 8 reports a minute"}

@@ -1,0 +1,3 @@
+- {id: agents, title: Agents, primitive: table, query: agents_table, requires: [control]}
+- {id: agent_resource_map, title: Agents and files, primitive: bipartite, query: actor_resource_graph, requires: [identities, resources]}
+- {id: activity_by_family, title: Activity by tool family, primitive: timeline, query: activity_timeline, requires: [timestamps]}

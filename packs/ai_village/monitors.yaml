@@ -1,0 +1,6 @@
+# Defaults this source contributes to the org config. Org config and UI overrides win.
+enabled: [coordination, propagation, environment, integrity, goals]
+overrides:
+  coordination.params.unit: actor       # few agents: convergence counted per agent, not per group
+  coordination.params.min_units: 3
+  integrity.params.lookback_windows: 6

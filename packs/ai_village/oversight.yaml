@@ -1,0 +1,6 @@
+# The team preset that suits this source, and why (the default team is the lead analyst with explorers; pick this preset in compose to use it) (docs/OVERSIGHT_ARCHITECTURES.md §5.1). A session override wins over this file.
+preset: desks
+reason: a few dozen agents with identities, a shared chat and stated goals; each agent's story over days matters more than cohorts
+overrides:
+  roles:
+    director: {model: claude-sonnet-5-5, effort: low}     # Sonnet by default for a village this size; set Opus here if you want it

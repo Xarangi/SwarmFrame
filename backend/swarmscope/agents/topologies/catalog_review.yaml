@@ -1,0 +1,141 @@
+title: Catalog review (identity-free records about targets)
+description: >
+  For a catalog of reports about targets rather than a live population of agents: nothing persists across records
+  except targets and methods, so there are no agent divisions, no diarist and no identity questions. Cycles follow
+  the record (batches of reports), not the clock. Method analysts read one method class each; a grade auditor checks
+  a random sample for volume being read as evidence; a chronicler says what changed since the last digest; a
+  specialist examines each method first seen on a target. The guard is against volume masquerading as evidence.
+root: curator
+
+roles:
+  curator:
+    title: Curator
+    kind: director
+    delegate: true
+    description: Reads the catalog summary, method reports and findings; keeps hypotheses about methods and targets; writes the digest.
+    prompt: prompts/curator.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 14
+    tools: [evidence.population_digest, evidence.cohorts, evidence.cohort, evidence.observations, evidence.timeline, "org.*"]
+    can_spawn: [method_analyst, grade_auditor, chronicler, new_method_specialist, specialist]
+    output: director
+    memory: state
+    scope: population
+    skills: [swarm-oversight]
+    skill_refs: [director, identity_free_sources, team_shaping, delegation]
+
+  method_analyst:
+    title: Method analyst
+    kind: analyst
+    delegate: true
+    description: "Reads one method class: its targets' volumes, grade mix, first and last seen, bursts."
+    prompt: prompts/method_analyst.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 10
+    tools: ["evidence.*", org.spawn_agent, org.get_report, org.escalate_finding, org.cases]
+    raw_access: false
+    can_spawn: [new_method_specialist, specialist]
+    output: division_report
+    memory: notes
+    scope: division
+    refresh_every_cycles: 1
+    skills: [swarm-oversight]
+    skill_refs: [division_analyst, identity_free_sources, report_contract, delegation]
+
+  grade_auditor:
+    title: Grade auditor
+    kind: auditor
+    description: Reads a random sample of records' metadata and estimates how often volume is being read as weight.
+    prompt: prompts/grade_auditor.md
+    model: claude-haiku-4-5-20251001
+    effort: low
+    max_turns: 8
+    tools: [evidence.unit_profile, evidence.cohort, evidence.query_events, evidence.sample_events, evidence.observations,
+            evidence.events_by_id, org.escalate_finding, org.cases]
+    output: division_report
+    memory: notes
+    scope: audit
+    refresh_every_cycles: 1
+    skills: [swarm-oversight]
+    skill_refs: [auditor, identity_free_sources, report_contract]
+
+  chronicler:
+    title: Chronicler
+    kind: generic
+    description: "What changed since the last digest: new targets, new methods, a shifted grade mix."
+    prompt: prompts/chronicler.md
+    model: claude-haiku-4-5-20251001
+    effort: low
+    max_turns: 6
+    tools: [evidence.population_digest, evidence.cohorts, evidence.observations, evidence.timeline, evidence.query_events]
+    output: finding
+    memory: notes
+    scope: population
+    refresh_every_cycles: 1
+    skills: [swarm-oversight]
+    skill_refs: [identity_free_sources, report_contract]
+
+  new_method_specialist:
+    title: New-method specialist
+    kind: investigator
+    description: "A method first seen on a target: a new technique, or a relabel? Which other targets share it?"
+    prompt: prompts/new_method.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 8
+    tools: ["evidence.*", org.escalate_finding, org.cases]
+    output: finding
+    memory: none
+    scope: any
+    refresh_every_cycles: 0
+    skills: [swarm-oversight]
+    skill_refs: [specialist, identity_free_sources]
+
+  specialist:
+    title: Specialist
+    kind: specialist
+    description: Answers one bounded question named in the brief.
+    prompt: prompts/specialist.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 8
+    tools: ["evidence.*", org.escalate_finding, org.cases]
+    raw_access: false
+    output: finding
+    memory: none
+    scope: any
+    refresh_every_cycles: 0
+    skills: [swarm-oversight]
+    skill_refs: [specialist, identity_free_sources]
+
+partition: {by: field, field: family, span: 8, min_events: 1}
+divisions: {max: 8, min_events: 1, lookback_windows: 48}
+standing:
+  - {role: grade_auditor, scope: audit}
+  - {role: chronicler, scope: population, brief: "What changed since the last digest?"}
+questions:
+  surge: method_analyst
+  "*": new_method_specialist
+cadence: {kind: records, every: 500}
+human: {briefing_every: 1d, interrupt_at: ALERT}
+authority: {alerts_per_cycle: 2, interrupts_per_day: 1, ack_sla_windows: 6, quiet_windows: 48}
+triage:
+  reads_per_cycle: auto
+  weights: {severity: 0.3, change: 0.25, novelty: 0.25, debt: 0.15, focus: 0.05}
+  lanes: {triage: 0.55, coverage: 0.25, audit: 0.2}
+  coverage_every_cycles: 4
+scaling:
+  max_agents: 14
+  max_depth: 3
+  max_concurrent_runs: 4
+  budget_usd_per_cycle: 1.5
+  budget_usd_total: 8.0
+  stale_after_windows: 48
+cycle: [refresh_children, root, maintain]
+maintain:
+  cover_divisions_with: method_analyst
+  audit_with: grade_auditor
+  retire_quiet_cycles: 10
+  split_when_events_over: 0

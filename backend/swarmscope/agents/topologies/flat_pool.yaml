@@ -1,0 +1,56 @@
+title: Director and a flat analyst pool
+description: >
+  A Director over a flat pool of generalists, one per group (team or model family). No specialists,
+  no nesting. Useful as a comparison point for the hierarchical topology.
+root: director
+
+roles:
+  director:
+    title: Director
+    kind: director
+    delegate: true
+    description: Writes the executive state from the pool's reports; may re-task or retire generalists.
+    prompt: prompts/director.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 12
+    tools: [evidence.observations, org.org_status, org.run_agent, org.retire_agent, org.get_report, org.spawn_agent]
+    can_spawn: [generalist]
+    output: director
+    memory: state
+    scope: population
+
+  generalist:
+    title: Generalist
+    kind: analyst
+    delegate: true
+    description: Watches one group of agents and reports each cycle.
+    prompt: prompts/division_analyst.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 8
+    tools: ["evidence.*"]
+    output: division_report
+    memory: notes
+    scope: division
+    refresh_every_cycles: 1
+
+divisions:
+  strategy: by_group
+  max: 10
+  min_events: 4
+  lookback_windows: 18
+
+scaling:
+  max_agents: 12
+  max_depth: 1
+  max_concurrent_runs: 4
+  budget_usd_per_cycle: 1.0
+  budget_usd_total: 4.0
+
+cycle: [refresh_children, root, maintain]
+
+maintain:
+  cover_divisions_with: generalist
+  retire_quiet_cycles: 6
+  split_when_events_over: null

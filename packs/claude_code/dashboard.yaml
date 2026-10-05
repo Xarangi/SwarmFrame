@@ -1,0 +1,21 @@
+# Default views for a live Claude Code swarm. The Brief's own sections are always there; `brief.panels` are its
+# signature views. Live control (approvals, pause, stop) is on the Control page and can be added to any page.
+title: Live Claude Code swarm
+terminology: {agent: agent, resource: file}
+brief:
+  glance: [active, attention, approvals, investigating]
+  attention_rows: 5
+  panels:
+    - {id: control, title: Live control, span: 5, kind: builtin, builtin: control}
+    - {id: tools, title: Tool calls by family, span: 7, view: {primitive: timeseries, query: {group_by: ["ts:hour", family], time: {last_hours: 6}}}}
+pages:
+  - id: live
+    title: Live tool use
+    icon: layers
+    description: What the agents are doing right now, by tool and file, and what the operator did.
+    reason: every tool call arrives with its agent and file
+    panels:
+      - {id: agents, title: Busiest agents, span: 4, view: {primitive: bar, query: {group_by: [actor], time: {last_hours: 1}}}}
+      - {id: files, title: Files most worked on, span: 8, view: {primitive: bar, query: {where: {family: files}, group_by: [object], time: {last_hours: 6}}}}
+      - {id: say_do, title: What they said vs what they did, span: 6, kind: builtin, builtin: say_do}
+      - {id: env, title: Environment & operators, span: 6, kind: builtin, builtin: environment}

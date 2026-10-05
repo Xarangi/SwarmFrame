@@ -1,0 +1,3 @@
+enabled: [targets]
+overrides:
+  targets.params.resource_burst.min_events: 12

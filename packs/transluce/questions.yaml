@@ -1,0 +1,3 @@
+- {id: burst_why, kind: surge, text: "What explains the burst of reports on {scope}, and what preceded and followed it?", required_capabilities: [resources]}
+- {id: new_method, kind: general, text: "What changed when a new method class appeared on {scope}?", required_capabilities: [techniques]}
+- {id: grade_mix, kind: general, text: "How much of the activity on {scope} is significant rather than suggestive?", required_capabilities: [evidence_grades]}

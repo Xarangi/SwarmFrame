@@ -1,0 +1,11 @@
+id: propagation
+title: Information propagation
+description: Content reused across agents, split into observed exposure paths and chronological-only matches.
+requires: [artifacts, timestamps]
+optional: [identities, communication]
+watchers: [artifact_reuse]
+slots: {retrieval: graph_neighborhood, summarization: extract_evaluate, evaluation: hybrid,
+        escalation: budget_aware, critique: independent_critic}
+params: {question_threshold: 0.45, extract_samples: 4}
+tunables: {artifact_reuse.exposure_window_h: [1, 48]}
+outputs: [observations, claims, questions]

@@ -1,0 +1,51 @@
+# The default monitoring organization: hierarchical, adaptive, LLM at the top.
+# Every key can be overridden from the Configure screen or another org file.
+name: Adaptive hierarchy
+description: Deterministic watchers, strategy-slot monitors, an Executive that holds global context and directs attention.
+
+monitors: [coordination, propagation, environment, integrity, goals]
+overrides: {}
+
+executive:
+  enabled: true
+  strategy: agent_org            # agent_org | structured_state | persistent_session | hierarchical_summary | ensemble | deterministic | global_summary
+  cadence_windows: 6
+  ledger_token_budget: 6000
+  directives:
+    max_active_focuses: 8
+    allowed_monitors: [coordination, propagation, environment, integrity, goals, identity]
+    focus_ttl_windows: 18
+
+# The analyst organization: a main agent that spawns and steers structured sub-agents.
+# Topologies live in backend/swarmscope/agents/topologies/ and are editable from the Organization screen.
+agents:
+  topology: lead                     # lead (a lead analyst that sends explorers where it gets interesting) | triage_tree | desks | board_watch | catalog_review | hierarchical_divisions | flat_pool | single_agent | sdk_native | <yours>
+  stub_delay_s: 0.25                 # pacing for deterministic agents so the tree visibly grows
+  min_cycle_windows: 3               # full organization cycles at most every N windows (human input forces one)
+
+investigations:
+  max_active: 3
+  max_nodes_per_investigation: 6
+  max_depth: 2
+  budget_usd_per_investigation: 0.40
+  node_delay_s: 1.2              # pacing for deterministic investigators so the tree visibly grows
+
+budgets:
+  max_usd_per_hour: 5.0
+
+risk_policy: research_default    # research_default | secops_strict
+autonomy: auto_investigate       # observe | assisted | auto_investigate
+
+llm:
+  mode: stub                     # stub (deterministic, no model) | cheap | full
+  cheap: {backend: claude_code, model: claude-sonnet-5-5, effort: low}
+  roles:
+    executive:    {backend: claude_code, model: claude-opus-5-5, effort: high}
+    investigator: {backend: claude_code, model: claude-sonnet-5-5, effort: medium, max_turns: 10}
+    critic:       {backend: claude_code, model: claude-opus-5-5, effort: medium}
+    summarizer:   {backend: claude_code, model: claude-sonnet-5-5, effort: low}
+    evaluator:    {backend: claude_code, model: claude-sonnet-5-5, effort: low}
+    extractor:    {backend: claude_code, model: claude-sonnet-5-5, effort: low}
+    copilot:      {backend: claude_code, model: claude-sonnet-5-5, effort: medium, max_turns: 12}
+    designer:     {backend: claude_code, model: claude-sonnet-5-5, effort: low, max_turns: 18}
+  max_concurrency: 3

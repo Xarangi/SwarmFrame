@@ -1,0 +1,68 @@
+title: Lead analyst with explorers
+description: >
+  One lead analyst watches the whole stream. When an area starts to look interesting (a finding the watchers raise,
+  a surge, a crowd on one place), it sends an explorer to look into that area; the explorer reads the evidence there,
+  reports back, and is let go once the area goes quiet. Nothing is pre-assigned: the team grows where something is
+  happening and shrinks when it calms down. The default for every source.
+root: lead
+
+roles:
+  lead:
+    title: Lead analyst
+    kind: director
+    delegate: true
+    description: Watches the whole stream, decides which areas deserve a closer look, sends explorers there, reads their reports and explains the picture in plain words.
+    prompt: prompts/lead.md
+    model: claude-sonnet-5-5
+    effort: medium
+    max_turns: 20
+    tools: [evidence.population_digest, evidence.observations, evidence.timeline, evidence.cohorts, evidence.templates,
+            org.org_status, org.spawn_agent, org.run_agent, org.retire_agent, org.get_report, org.escalate_finding,
+            org.cases, org.log_decision]
+    can_spawn: [explorer]
+    output: director
+    memory: state
+    scope: population
+    skills: [swarm-oversight]
+    skill_refs: [director, delegation]
+
+  explorer:
+    title: Explorer
+    kind: specialist
+    delegate: true
+    description: Looks into one area the lead found interesting (a place, a group, a piece of copied text, a burst) and reports what is going on there, with evidence.
+    prompt: prompts/explorer.md
+    model: claude-sonnet-5-5
+    effort: low
+    max_turns: 10
+    tools: ["evidence.*", org.escalate_finding, org.cases]
+    raw_access: true
+    output: finding
+    memory: notes
+    scope: any
+    refresh_every_cycles: 1
+    skills: [swarm-oversight]
+    skill_refs: [specialist]
+
+divisions:
+  strategy: none
+
+scaling:
+  max_agents: 8
+  max_depth: 1
+  max_concurrent_runs: 4
+  budget_usd_per_cycle: 1.0
+  budget_usd_total: 6.0
+
+cycle: [refresh_children, root, maintain]
+
+maintain:
+  cover_divisions_with: null
+  retire_quiet_cycles: 0
+  split_when_events_over: null
+  # interest-driven: an open finding at this level or above gets an explorer; the explorer is let go when the
+  # finding closes or after ttl cycles without the finding rising
+  explore_with: explorer
+  explore_min_level: INVESTIGATE
+  explore_max: 4
+  explore_ttl_cycles: 4

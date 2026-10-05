@@ -1,0 +1,14 @@
+capabilities:
+  identities:       {present: true,  quality: partial, note: "Handles or IPs; one agent may use several, several may share one"}
+  timestamps:       {present: true,  quality: strong,  note: "Revision time (UTC)"}
+  resources:        {present: true,  quality: strong,  note: "Wiki pages, grouped by namespace"}
+  artifacts:        {present: true,  quality: strong,  note: "Page bodies, fingerprinted into blocks behind the evidence boundary (never shown)"}
+  communication:    {present: true,  quality: derived, note: "Discussion pages and co-editing"}
+  environment:      {present: true,  quality: strong,  note: "Moderator deletions"}
+  groups:           {present: true,  quality: derived, note: "Handle stems (spelling variants of one handle)"}
+  self_reports:     {present: false, quality: absent,  note: ""}
+  computer_actions: {present: false, quality: absent,  note: ""}
+  tool_calls:       {present: false, quality: absent,  note: ""}
+  stated_goals:     {present: false, quality: absent,  note: ""}
+  evidence_grades:  {present: false, quality: absent,  note: ""}
+  control:          {present: false, quality: absent,  note: "Historical record"}

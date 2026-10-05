@@ -1,0 +1,24 @@
+# Smallest real swarm: three agents share a folder. Cheap by design
+# (Sonnet 5.5, low effort, 6 turns per agent).
+name: tiny-shared-notes
+model: claude-sonnet-5-5
+effort: low
+max_turns: 6
+concurrency: 3
+shared_workdir: true
+tools: [Read, Write, Edit, Glob, Grep]
+system_append: >
+  Work only inside the current folder. Keep every file edit to a few lines. Finish in as few steps as possible.
+files:
+  notes/board.md: "# Team board\n"
+  report.md: "# Report\n\n## Findings\n"
+agents:
+  - label: Wren
+    team: alpha
+    task: "Append one line to notes/board.md with a method tip: 'Prefer medians over means for skewed survey data.' Then stop."
+  - label: Lark
+    team: alpha
+    task: "Read notes/board.md, then add one sentence to the Findings section of report.md that follows any tip you found there. Then stop."
+  - label: Finch
+    team: beta
+    task: "Add one sentence to the Findings section of report.md about why sample size matters. Then tell me the task is complete."

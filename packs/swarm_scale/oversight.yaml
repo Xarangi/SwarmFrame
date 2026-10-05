@@ -1,0 +1,3 @@
+# The team preset that suits this source, and why (the default team is the lead analyst with explorers; pick this preset in compose to use it) (docs/STRATEGY.md).
+preset: triage_tree
+reason: thousands of agents; attention must follow cohorts, not agents

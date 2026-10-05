@@ -1,0 +1,3 @@
+enabled: [coordination, propagation, environment, integrity, targets, goals]
+overrides:
+  coordination.params.min_units: 4

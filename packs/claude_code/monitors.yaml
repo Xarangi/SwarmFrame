@@ -1,0 +1,6 @@
+enabled: [coordination, propagation, environment, integrity, goals]
+overrides:
+  coordination.params.unit: actor
+  coordination.params.min_units: 3
+  coordination.params.exclude_families: [shell, search, goal, narration, lifecycle, control, web]
+  integrity.params.lookback_windows: 24

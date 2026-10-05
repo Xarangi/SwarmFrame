@@ -1,0 +1,6 @@
+name: Adaptive hierarchy (cheap LLM)
+description: The default organization with every LLM role on Sonnet 5.5 at low effort through the local Claude Code CLI.
+llm: {mode: cheap}
+executive: {cadence_windows: 12}
+investigations: {max_active: 2}
+budgets: {max_usd_per_hour: 1.0}
