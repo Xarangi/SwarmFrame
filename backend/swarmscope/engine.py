@@ -80,8 +80,7 @@ class Engine:
             self.window_len = self.clock.window
         else:
             adapter = self.pack.adapter()
-            batch: Batch = adapter.load(path, slice_override) if "slice_override" in adapter.load.__code__.co_varnames \
-                else adapter.load(path)
+            batch: Batch = _cached_load(self.pack, adapter, path, slice_override)
             self.meta = batch.meta
             self._ingest(batch)
             start, end = batch.meta.get("slice_start"), batch.meta.get("slice_end")
@@ -897,3 +896,37 @@ class Engine:
         if kind == "family":
             return f"{ident} workstream"
         return scope
+
+
+def _cached_load(pack: Any, adapter: Any, path: Any, slice_override: Any) -> "Batch":
+    """Parse a recorded source once and keep the result on disk (data/cache). The key covers the source, path, slice
+    and every data file's size and modified time, so a new download or another slice parses afresh."""
+    import hashlib
+    import pickle
+    from swarmscope.ingest.packs import ROOT
+
+    def load():
+        return adapter.load(path, slice_override) if "slice_override" in adapter.load.__code__.co_varnames \
+            else adapter.load(path)
+    root = ROOT / str(pack.source.get("default_path") or f"data/{pack.id}")
+    if path == "synthetic" or not root.exists():
+        return load()
+    files = sorted((str(f.relative_to(root)), f.stat().st_size, int(f.stat().st_mtime)) for f in root.rglob("*")
+                   if f.is_file() and not f.name.startswith("_"))
+    key = hashlib.sha1(repr((pack.id, path, slice_override, files,
+                             (pack.dir / "source.yaml").stat().st_mtime)).encode()).hexdigest()[:16]
+    cache = ROOT / "data" / "cache" / f"{pack.id}-{key}.pkl"
+    if cache.exists():
+        try:
+            return pickle.loads(cache.read_bytes())
+        except Exception:
+            pass
+    batch = load()
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        for old in cache.parent.glob(f"{pack.id}-*.pkl"):
+            old.unlink()
+        cache.write_bytes(pickle.dumps(batch, protocol=pickle.HIGHEST_PROTOCOL))
+    except Exception:
+        pass
+    return batch
