@@ -55,8 +55,8 @@ export function Compose() {
   const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([])
   const [slices, setSlices] = useState<Slice[]>([])
   const [info, setInfo] = useState<Info | null>(null)
-  const [choice, setChoice] = useState<Choice>('scale')
-  const [demo, setDemo] = useState(true)
+  const [choice, setChoice] = useState<Choice>('village')
+  const [demo, setDemo] = useState(false)
   const [goal, setGoal] = useState('680a1b42')
   const [agents, setAgents] = useState(2000)
   const [org, setOrg] = useState('default')
@@ -199,11 +199,11 @@ export function Compose() {
         </div>
         <div className="stack">
           <div className="label"><span className="step-n" style={{ visibility: 'hidden' }}>1</span>or explore recorded swarm data</div>
-          {card({ id: "scale", meta: "Synthetic · thousands of agents", title: "Planted swarm at scale", body: "Thousands of agents in teams and tens of thousands of messages, with five planted problems that only show up in aggregate.", children: <>
-            <div className="row" style={{ gap: 10 }}>
-              <input type="range" min={500} max={5000} step={500} value={agents} onChange={(e) => setAgents(+e.target.value)} style={{ flex: 1 }} />
-              <span className="display" style={{ fontSize: 20, width: 70, textAlign: 'right' }}>{agents.toLocaleString()}</span>
-            </div>
+          {card({ id: "village", meta: !sources.length ? 'AI Village' : has('ai_village') ? 'AI Village · real subset' : 'AI Village · not downloaded', title: "AI Village", body: "Twenty-one AI agents with their own computers and a shared chat, working toward a common goal for a week: every message, computer session and goal, plus what they did between messages (memory checkpoints, pauses, searches, outreach requests and the reasoning behind each action).", children: <>
+            <select className="input" value={goal} onChange={(e) => setGoal(e.target.value)}>
+              {[...slices].sort((a, b) => (b.goal.startsWith('680a1b42') ? 1 : 0) - (a.goal.startsWith('680a1b42') ? 1 : 0)).map((s) => <option key={s.goal} value={s.goal.slice(0, 8)}>{s.goal.startsWith('680a1b42') ? 'Recommended · ' : ''}{s.start.slice(0, 10)} · {s.days} days · {s.agents} agents · {s.chat} messages</option>)}
+              {!slices.length && <option value="680a1b42">default slice</option>}
+            </select>
           </> })}
           {card({ id: "transluce", meta: !sources.length ? 'Transluce' : has('transluce') ? 'Transluce · real catalog' : 'Transluce · synthetic stand-in', title: "Agent activity on the web", body: "A historical catalog, not a live swarm: 37,649 web-scan reports that Transluce attributes to autonomous agents (Oct 2023 to Sep 2026). Each names the data source targeted, how it was reached and how confident the attribution is. No agent identities." })}
           {card({ id: "german", meta: has('german_wiki') ? 'German message board · real export' : 'German message board · synthetic stand-in', title: "The German message board", body: "Handles writing on a shared wiki (May to July 2026): separate groups converge on question pages, text spreads between them, and moderators delete pages in sweeps. Handles are names, not confirmed agents.", children: <>
@@ -212,13 +212,6 @@ export function Compose() {
               <button className={gwFull ? 'on' : ''} onClick={() => { setChoice('german'); setGwFull(true) }}>Whole record · May 17–Jul 14</button>
             </div>
           </> })}
-          {card({ id: "village", meta: !sources.length ? 'AI Village' : has('ai_village') ? 'AI Village · real subset' : 'AI Village · not downloaded', title: "Replay the village", body: "A slice of the real AI Village: complete chat and every computer-use session goal for one goal period.", children: <>
-            <select className="input" value={goal} onChange={(e) => setGoal(e.target.value)}>
-              {[...slices].sort((a, b) => (b.goal.startsWith('680a1b42') ? 1 : 0) - (a.goal.startsWith('680a1b42') ? 1 : 0)).map((s) => <option key={s.goal} value={s.goal.slice(0, 8)}>{s.goal.startsWith('680a1b42') ? 'Recommended · ' : ''}{s.start.slice(0, 10)} · {s.days} days · {s.agents} agents · {s.chat} messages</option>)}
-              {!slices.length && <option value="680a1b42">default slice</option>}
-            </select>
-          </> })}
-          {card({ id: "village_synthetic", meta: "AI Village · synthetic", title: "Planted village scenario", body: "The village, with planted problems to find: agents converging on one file, copied content, a false report, operator stops, a surge." })}
         </div>
       </div>
 

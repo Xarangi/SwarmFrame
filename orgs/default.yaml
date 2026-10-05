@@ -1,6 +1,6 @@
 # The default monitoring organization: hierarchical, adaptive, LLM at the top.
 # Every key can be overridden from the Configure screen or another org file.
-name: Adaptive hierarchy
+name: Default analyst team
 description: Deterministic watchers, strategy-slot monitors, an Executive that holds global context and directs attention.
 
 monitors: [coordination, propagation, environment, integrity, goals]

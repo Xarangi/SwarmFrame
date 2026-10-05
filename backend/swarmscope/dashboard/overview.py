@@ -86,7 +86,9 @@ def _overview(engine: "Engine") -> dict[str, Any]:
             g = gkey(e)
             if g:
                 prev_g[g].append(e)
-        for g in sorted(set(now_g) | set(prev_g), key=lambda g: -len(now_g.get(g, []))):
+        def busy(g: str) -> tuple:                      # most agents active first, then most events
+            return (-len({e.actor for e in now_g.get(g, [])}), -len(now_g.get(g, [])))
+        for g in sorted(set(now_g) | set(prev_g), key=busy):
             evs, prev = now_g.get(g, []), prev_g.get(g, [])
             work = [e for e in evs if fam(e) not in NOT_WORK]
             fams = Counter(fam(e) for e in work)
@@ -142,7 +144,7 @@ def _overview(engine: "Engine") -> dict[str, Any]:
             emerging.append({"kind": "shift", "text": f"{g['group']} moved from mostly {g['shifted_from']} to {g['doing']}",
                              "cites": g["cites"]})
         elif g["trend"] == "new":
-            emerging.append({"kind": "group_active", "text": f"{g['group']} became active ({g['active']} {noun}s)",
+            emerging.append({"kind": "group_active", "text": f"{g['group']} became active ({g['active']} {noun}{'s' if g['active'] != 1 else ''})",
                              "cites": g["cites"]})
     emerging = emerging[:8]
 
@@ -150,7 +152,7 @@ def _overview(engine: "Engine") -> dict[str, Any]:
     if act:
         lead = act[0]
         summary = (f"In the last {_fmt(span)}: {len(act)} of {len(groups)} {plural(gnoun)} active. "
-                   f"{lead['group']} is busiest ({lead['active']} {noun}s, mostly {lead['doing']}"
+                   f"{lead['group']} is busiest ({lead['active']} {noun}{'s' if lead['active'] != 1 else ''}, mostly {lead['doing']}"
                    + (f", on {lead['where']}" if lead["where"] else "") + ")."
                    + (f" Emerging: {emerging[0]['text']}." if emerging else ""))
     else:

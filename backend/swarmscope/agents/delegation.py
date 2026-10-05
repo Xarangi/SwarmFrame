@@ -30,7 +30,7 @@ KINDS = ("native", "managed", "rerun", "retire", "escalation", "proposal", "note
 class DelegationLog:
     def __init__(self, engine: "Engine", directory: Path | None = None, keep: int = 400):
         self.engine = engine
-        self.dir = directory or (ROOT / "data" / "runs" / f"{engine.pack.id}_{time.strftime('%Y%m%d-%H%M%S', time.localtime(engine.started_wall))}")
+        self.dir = directory or (ROOT / "data" / "runs" / f"{engine.pack.id}_{time.strftime('%Y%m%d-%H%M%S', time.localtime(engine.started_wall))}_{id(engine) % 100000:05d}")   # unique even for two sessions in one second
         self.path = self.dir / "delegations.jsonl"
         self.tail: list[dict[str, Any]] = []
         self.keep = keep

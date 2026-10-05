@@ -782,7 +782,7 @@ export class WorldView {
       this.v.set(it.x, it.y, it.z).project(this.camera)
       if (this.v.z > 1) { el.style.display = 'none'; return }
       const sx = ((this.v.x + 1) / 2) * w, sy = ((1 - this.v.y) / 2) * h
-      if (placed.some(([px, py]) => Math.abs(px - sx) < 230 && Math.abs(py - sy) < 26)) { el.style.display = 'none'; return }   // labels never stack
+      if (placed.some(([px, py]) => Math.abs(px - sx) < 230 && Math.abs(py - sy) < 36)) { el.style.display = 'none'; return }   // labels never stack
       placed.push([sx, sy])
       el.style.display = ''
       el.className = 'wl ' + it.cls
