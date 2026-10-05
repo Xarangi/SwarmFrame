@@ -174,16 +174,7 @@ export function Compose() {
 
       <div className="two-col" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
         <div className="stack">
-          <div className="label"><span className="step-n">1</span>Pick the data · link a swarm stream</div>
-          {card({ id: "claude_code", meta: "Claude Code · live", title: "A Claude Code swarm", body: "Agents launched by the SwarmFrame runner, or any Claude Code session reporting through hooks. Every tool call, with a control plane.", children: <>
-            <div className="mono" style={{ fontSize: 11, lineHeight: 1.5 }}>
-              <div className="muted">Runner (control + observation):</div>
-              <code>swarmscope run-swarm runner/scenarios/tiny.yaml</code>
-              <div className="muted" style={{ marginTop: 6 }}>Or add this hook command to a project’s .claude/settings.json (SessionStart, PreToolUse, PostToolUse, Stop):</div>
-              <code style={{ wordBreak: 'break-all' }}>{hookCmd}</code>
-            </div>
-            <label className="row mono" style={{ marginTop: 10, gap: 6 }}><input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} />also simulate 200 agents for a demo</label>
-          </> })}
+          <div className="label"><span className="step-n">1</span>Pick the data · link your own stream</div>
           {card({ id: "stream", meta: "Any source · live", title: "Any event stream (JSON)", body: "Post events from any swarm. Nothing is declared up front: capabilities are inferred from what arrives, and the dashboard is composed around them.", children: <>
             <div className="mono" style={{ fontSize: 11, lineHeight: 1.5 }}>
               <div className="muted">POST a JSON list to {info?.url ?? 'http://127.0.0.1:8765'}/ingest/events. Only <b>action</b> is required; every other field adds what the dashboard can show.</div>

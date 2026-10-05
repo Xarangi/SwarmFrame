@@ -13,9 +13,8 @@ follows your system theme (light or dark) when viewed on GitHub.
 
 The start screen lists the four steps of a session at the top. Below them are the sources.
 
-On the left are the two live options. **A Claude Code swarm** takes events from agents started by the SwarmFrame
-runner or from any Claude Code session that reports through hooks. **Any event stream** takes JSON you post from any
-system. SwarmFrame works out what your stream contains from the first events that arrive.
+On the left is the live option, **Any event stream**: post JSON from any system and SwarmFrame works out what
+your stream contains from the first events that arrive.
 
 On the right are the recorded sources. For the AI Village the recommended week is selected already.
 

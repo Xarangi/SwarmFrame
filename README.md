@@ -34,8 +34,8 @@ cd frontend && npm install && npm run build && cd ..
 
 On macOS or Linux use `.venv/bin/` in place of `.venv/Scripts/`. Then open http://127.0.0.1:8765.
 
-The recorded sources need their data first (see [Getting the recorded data](#getting-the-recorded-data)). The live
-options, a Claude Code swarm and [any JSON event stream](#use-your-own-data), work without downloading anything.
+The recorded sources need their data first (see [Getting the recorded data](#getting-the-recorded-data)). The live option,
+[any JSON event stream](#use-your-own-data), works without downloading anything.
 
 ## How it works, in four steps
 
@@ -113,33 +113,16 @@ curl -X POST http://127.0.0.1:8765/ingest/events -H "content-type: application/j
 After about 150 events SwarmFrame works out what your stream contains, turns on the monitors that fit, and composes
 the dashboard. Keep posting and it keeps watching.
 
-**Watch Claude Code sessions.** Add the hook script to the `.claude/settings.json` of any project. Every session in
-that project then reports its prompts, tool calls and stops to SwarmFrame. The start screen shows the exact command
-for your machine.
-
-```json
-{"hooks": {
-  "SessionStart": [{"hooks": [{"type": "command", "command": "python /path/to/SwarmFrame/scripts/swarmscope_hook.py"}]}],
-  "PreToolUse":   [{"matcher": "*", "hooks": [{"type": "command", "command": "python /path/to/SwarmFrame/scripts/swarmscope_hook.py"}]}],
-  "PostToolUse":  [{"matcher": "*", "hooks": [{"type": "command", "command": "python /path/to/SwarmFrame/scripts/swarmscope_hook.py"}]}],
-  "Stop":         [{"hooks": [{"type": "command", "command": "python /path/to/SwarmFrame/scripts/swarmscope_hook.py"}]}]}}
-```
-
-Set `SWARMSCOPE_TEAM` and `SWARMSCOPE_LABEL` in a session's environment to group and name it. Hooks only observe.
-To also pause, deny or stop agents from the dashboard, start them with the runner instead:
-`swarmframe run-swarm runner/scenarios/tiny.yaml`.
-
 **Write a source pack.** For a dataset you will open again and again, add a folder under `packs/` with a few YAML
 files: `source.yaml` (what the data is, what to call things, how names are formed), `capabilities.yaml` (what it can
 and cannot show), and optionally `dashboard.yaml` (default pages), `world.yaml` (the 3D scene), `questions.yaml`
 (good first questions) and `monitors.yaml`. Then point an adapter at your files. The packs in `packs/` (AI Village, the German
-board, Transluce, Claude Code, the generic stream) are working examples, and the [technical reference](docs/REFERENCE.md) lists every field.
+board, Transluce, the generic stream) are working examples, and the [technical reference](docs/REFERENCE.md) lists every field.
 
 ## The sources it ships with
 
 | Source | What it is | Kind |
 |---|---|---|
-| A Claude Code swarm | Agents started by the SwarmFrame runner, or any Claude Code session reporting through hooks. Every tool call, with the option to pause, deny or stop. | Live |
 | Any event stream | Your own JSON events, as above. | Live |
 | AI Village | Twenty-one AI agents with their own computers and a shared chat, over one week: messages, computer sessions, goals, memory checkpoints, pauses, searches, outreach requests and the reasoning behind each action. | Recorded |
 | The German message board | Handles writing on a shared wiki, with groups that converge on the same pages, text that spreads between them, and moderators deleting pages in sweeps. | Recorded |
