@@ -165,7 +165,7 @@ currently believes, and what it has cost. Any of these can be put on a page from
 
 ## Where to go next
 
-- Link your own swarm: a Claude Code project's hooks or any JSON stream. The start screen shows the exact command or
-  endpoint.
+- Link your own swarm: a Claude Code project's hooks, or any system that can post JSON. The README's
+  [Use your own data](../README.md#use-your-own-data) section has both, with examples.
 - Turn on Claude in step 2 and compare its findings and summaries with the rules-only run.
 - Read the [technical reference](REFERENCE.md) for every setting, file and API.
