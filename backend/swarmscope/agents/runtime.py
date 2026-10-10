@@ -113,6 +113,7 @@ class AgentOrg:
         self.engine = engine
         self.topology: Topology = load_topology(topology) if isinstance(topology, str) else topology
         self.nodes: dict[str, AgentNode] = {}
+        self.read: set[str] = set()                 # every record the team's agents looked at (strategy comparisons)
         self.divisions: dict[str, D.Division] = {}
         self.events: list[OrgEvent] = []
         self.runs: list[AgentRun] = []
@@ -143,6 +144,11 @@ class AgentOrg:
                 "coverage_every": t.get("coverage_every_cycles")}
 
     def set_topology(self, t: Topology | str | dict[str, Any], by: str = "human") -> Topology:
+        if t == "composed":                         # assembled for this stream (agents/composer.py)
+            from swarmscope.agents.composer import compose
+            c = compose(self.engine)
+            self.engine.composition = c
+            t = c["topology"]
         new = load_topology(t) if isinstance(t, str) else from_dict(t, t.get("id", "custom")) if isinstance(t, dict) else t
         old = self.topology
         self.topology = new
@@ -457,6 +463,7 @@ class AgentOrg:
                 res = await RUNNERS["stub"](ctx, model=None, effort=None, stub_override=stub_override)
                 res.error = f"{type(exc).__name__}: {str(exc)[:300]}"
         data = res.data or {}
+        self.read |= tools.inspected
         claims = self.engine.investigations._verify(
             [c for c in data.get("claims", []) if isinstance(c, dict)], f"agent.{node.role}", node.scope)
         for c in claims:

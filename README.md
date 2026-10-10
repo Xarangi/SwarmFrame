@@ -87,7 +87,9 @@ Everything on the dashboard can be changed while it runs, and every change can b
 - **The World.** The 3D view has its own designer: the scene, the zones, the props, and the rules for how agents
   move. Claude can design it, or you can.
 - **The analysts.** The default team is one lead analyst that sends explorers to anything that starts to look
-  interesting. Other team shapes are presets, and any team can be edited role by role.
+  interesting. "Composed for this data" assembles a team from parts (readers, specialists) switched on by what the
+  records show, each with its reason. Other team shapes are presets, and any team can be edited role by role and
+  saved as a new preset.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/12-look-dark.png">
@@ -136,13 +138,19 @@ after the fact and writes a report.
 3. It reads the whole record at once, through the same watchers and analysts as live monitoring, and writes a report:
    a TL;DR, a timeline, then the analysis, with record ids behind every claim. Rules write it for free in seconds; or
    let Claude investigate from there with the evidence tools and write it up with a confidence for each conclusion.
-4. Download the report as Markdown, or open the analysis in the full dashboard to explore it.
+4. Choose the analyst team: one **composed** for this data (a lead with explorers, plus readers and specialists
+   switched on by what the records show, each with its reason), a preset, a **search** that tries several teams on
+   the first 30% and keeps the best, or a **comparison** of several teams on the whole record (what each found, what
+   most of them agree on, how much each read, what it cost).
+5. Download the report as Markdown, or open the analysis in the full dashboard to explore it.
 
 From the command line:
 
 ```bash
 .venv/Scripts/swarmframe analyze path/to/logs --out report.md
 .venv/Scripts/swarmframe analyze path/to/logs --write claude --words 2500-3000 --out report.md
+.venv/Scripts/swarmframe analyze path/to/logs --compare composed lead triage_tree desks
+.venv/Scripts/swarmframe analyze path/to/logs --search
 ```
 
 To score a report against [MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench), see

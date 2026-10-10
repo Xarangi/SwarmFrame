@@ -281,7 +281,18 @@ def to_markdown(rep: dict[str, Any]) -> str:
         L += [f"- **{i['question']}** {i['answer']}" for i in rep["investigations"][:10]]
         L.append("")
     rd = rep["reading"]
-    L += ["### How this was read", "",
+    stg = rep.get("strategy") or {}
+    comp = (stg.get("composition") or {})
+    L += ["### How this was read", ""]
+    if stg:
+        L.append(f"The analyst team: **{stg.get('label') or stg.get('title')}**"
+                 + (f". {comp['summary']}" if comp.get("summary") else f" ({', '.join(stg.get('roles') or [])}).") )
+        for part in comp.get("parts") or []:
+            if part["how"] != "off" and part["part"] not in ("lead",):
+                L.append(f"- {part['title']} ({part['how'].replace('_', ' ')}): {part['reason']}"
+                         + (f" ({part['evidence']})" if part.get("evidence") else ""))
+        L.append("")
+    L += [
           f"SwarmFrame replayed the whole record in {rd['windows']:,} windows through its watchers and analyst team "
           f"({'fixed rules' if rd['llm'] == 'stub' else 'with a model'}), which made {rd['observations']:,} observations. "
           "Record ids in backticks can be opened in SwarmFrame's evidence drawer. Counts and times are exact; patterns "

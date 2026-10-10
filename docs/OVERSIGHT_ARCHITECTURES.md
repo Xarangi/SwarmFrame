@@ -7,6 +7,13 @@ existing large-swarm triage tree), the grammar they are all written in, and the 
 shape for a stream nobody has seen before. It ends with the changes the dashboard needs so that none of this is
 hard-coded.
 
+Update (2026-10-10): **a composer beside the selector.** `agents/composer.py` assembles a team for the data from the
+parts the presets are made of (lead and explorers always; readers, sector leads and specialists switched on by
+measured evidence; an auditor), each with its reason, validated like any topology; Claude may compose by choosing
+among the same parts. Dump analysis can read one record with several teams, compare them without ground truth
+(agreement, what only one team found, records read closely, supported claims, cost), or search: candidates try the
+first 30% and the best reads it all (`analysis/jobs.py`). See the technical reference, "The composer".
+
 Status (2026-10-04): **built**, phases 1–4 of §10 in a first version. The grammar (§4) is in `agents/spec.py`
 (partition/levels/standing/questions/cadence/human/envelope/authority); the library (§5) ships `desks`,
 `board_watch`, `catalog_review` beside `triage_tree`; each pack names its team in `packs/<id>/oversight.yaml`

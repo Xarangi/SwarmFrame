@@ -98,3 +98,51 @@ def test_free_designer_reads_plain_words(monkeypatch):
 def test_every_preset_is_readable():
     for k in T.PRESETS:
         assert T.check(T.ThemeSpec(preset=k)) == [], k
+
+
+def test_composer_assembles_a_team_from_evidence():
+    """The composer builds the team from parts, each switched on by what the records show, and the result passes the
+    same validation as a hand-written preset."""
+    from swarmscope.agents.composer import compose
+    from swarmscope.engine import Engine
+    small = Engine("ai_village", "default", path="synthetic", overrides={"llm.mode": "stub"})
+    c = compose(small)
+    on = {p["part"]: p["how"] for p in c["parts"]}
+    assert on["lead"] == "root" and on["explorer"] == "on_call"
+    assert on["reader"] == "off"                          # a small cast: one lead can follow them all
+    assert on.get("diarist") == "standing" and on.get("integrity") in ("standing", "on_call")
+    assert all(p["reason"] for p in c["parts"])
+    big = Engine("swarm_scale", "default", slice_override={"agents": 400, "hours": 4}, overrides={"llm.mode": "stub"})
+    c2 = compose(big)
+    t = c2["topology"]
+    assert "reader" in t.roles and t.partition.get("by") in ("group", "cohort", "field")
+    assert t.maintain["cover_divisions_with"] == "reader" and t.questions["*"] == "explorer"
+    forced = compose(big, {"reader": "off", "goals": "standing"})
+    assert "reader" not in forced["topology"].roles and "goals" in forced["topology"].roles
+    # a session can ask for it by name
+    e = Engine("swarm_scale", "default", slice_override={"agents": 120, "hours": 2},
+               overrides={"llm.mode": "stub", "agents.topology": "composed"})
+    assert e.team_choice["by"] == "composer" and e.team_choice["topology"].id == "composed"
+
+
+def test_strategies_compared_and_searched_on_one_dump(tmp_path, monkeypatch):
+    from swarmscope.analysis import jobs
+    monkeypatch.setattr(jobs, "_save", lambda job: None)
+    d, _ = _dump(tmp_path, n_agents=30, hours=6)
+
+    async def go(opts):
+        return await jobs.run_blocking(str(d), opts)
+    job = asyncio.run(go({"strategies": [{"team": "composed"}, {"team": "lead"}, {"team": "triage_tree"}]}))
+    assert job.status == "done", job.error
+    cmp_ = job.comparison
+    assert cmp_ and len(cmp_["rows"]) == 3 and cmp_["best"] in {r.label for r in job.runs}
+    assert all(0 <= r["consensus_recall"] <= 1 for r in cmp_["rows"])
+    assert len({r["coverage"] for r in cmp_["rows"]}) > 1            # teams read different amounts of the record
+    assert "analyst team" in job.markdown
+    assert all(r.engine is None for r in job.runs)                    # compared runs keep numbers, not engines
+    e = asyncio.run(jobs.ensure_engine(job))                          # read again on demand to explore
+    assert e is not None and e.store.count_events() > 0
+    job = asyncio.run(go({"search": True, "search_fraction": 0.3}))
+    assert job.status == "done", job.error
+    assert job.search and len(job.search["trials"]) == 5 and job.search["picked"]
+    assert len(job.runs) == 1 and "picked by the search" in job.runs[0].label

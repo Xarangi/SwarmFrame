@@ -167,7 +167,7 @@ export function Compose() {
         <div className="run-summary">
           <span className="label" style={{ marginRight: 4 }}>How it runs</span>
           <span className="pill">{reader}</span>
-          <span className="pill">{team === 'auto' ? autoLabel : teamTitle(team)}</span>
+          <span className="pill">{team === 'auto' ? autoLabel : team === 'composed' ? 'Composed for this data' : teamTitle(team)}</span>
           <span className="pill">{playLine}</span>
           <span className="pill">{updates}</span>
           <button className="link" onClick={() => setSetup(!setup)} aria-expanded={setup}>{setup ? 'Done' : 'Change'}</button>
@@ -184,6 +184,10 @@ export function Compose() {
                 <button role="radio" aria-checked={team === 'auto'} className={`team-opt ${team === 'auto' ? 'on' : ''}`} onClick={() => setTeam('auto')}>
                   <span className="team-top"><span className="mode-dot" />{autoLabel}<span className="mode-cost">default</span></span>
                   <span className="mode-body">{TEAM_PLAIN[packDefault?.topology ?? 'lead'] ?? TEAM_PLAIN.lead}</span>
+                </button>
+                <button role="radio" aria-checked={team === 'composed'} className={`team-opt ${team === 'composed' ? 'on' : ''}`} onClick={() => setTeam('composed')}>
+                  <span className="team-top"><span className="mode-dot" />Composed for this data<span className="mode-cost">new</span></span>
+                  <span className="mode-body">A lead with explorers, plus readers and specialists switched on by what the records show (self-reports, shared text, moderation, look-alike names), each with its reason.</span>
                 </button>
                 {presetId && (
                   <button role="radio" aria-checked={team === presetId} className={`team-opt ${team === presetId ? 'on' : ''}`} onClick={() => setTeam(presetId)}>

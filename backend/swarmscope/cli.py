@@ -78,6 +78,10 @@ def main(argv: list[str] | None = None) -> None:
     an.add_argument("--words", default=None, help="target length for Claude, e.g. 2500-3000")
     an.add_argument("--title", default="")
     an.add_argument("--detect", action="store_true", help="only show what is in the dump (structure only)")
+    an.add_argument("--team", default="composed", help="composed (default), auto, or a preset id (lead, desks, ...)")
+    an.add_argument("--compare", nargs="+", default=None, help="read the dump with several teams and compare them")
+    an.add_argument("--composer", choices=["rules", "claude"], default="rules")
+    an.add_argument("--search", action="store_true", help="try candidate teams on the first 30%% and keep the best")
 
     a = ap.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -105,7 +109,12 @@ def main(argv: list[str] | None = None) -> None:
         if a.detect:
             print(json.dumps(detect(a.path), indent=2, default=str))
             return
-        opts = {"write": a.write, "model": a.model, "effort": a.effort, "title": a.title}
+        opts = {"write": a.write, "model": a.model, "effort": a.effort, "title": a.title,
+                "strategy": {"team": a.team, "composer": a.composer}}
+        if a.compare:
+            opts["strategies"] = [{"team": t} for t in a.compare]
+        if a.search:
+            opts["search"] = True
         if a.source:
             opts["source"] = a.source
         if a.words:
@@ -121,6 +130,12 @@ def main(argv: list[str] | None = None) -> None:
             Path(a.out).write_text(md, encoding="utf-8")
             if job.written:
                 Path(a.out).with_suffix(".rules.md").write_text(job.markdown, encoding="utf-8")
+        if job.search:
+            print(json.dumps({"search": {"picked": job.search["picked"], "trials": [{k: r[k] for k in ("label", "score", "found",
+                              "consensus_recall", "coverage", "agents_used", "seconds")} for r in job.search["trials"]]}}, indent=2))
+        if job.comparison:
+            print(json.dumps({"comparison": {k: v for k, v in job.comparison.items() if k not in ("consensus",)}}, indent=2,
+                             default=str)[:6000])
         print(json.dumps({"source": job.source, "seconds": round(job.finished - job.started, 1), "words": word_count(md),
                           **summary_counts(job.report), "out": a.out,
                           "writer": {k: v for k, v in (job.writer or {}).items() if k != "open_questions"} or None}, indent=2, default=str))

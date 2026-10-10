@@ -826,8 +826,34 @@ def analysis_get(jid: str) -> dict[str, Any]:
         raise HTTPException(404, "no such analysis")
     out = j.public()
     if j.report is not None:
-        out.update(report=j.report, markdown=j.markdown, written=j.written)
+        out.update(report=j.report, markdown=j.markdown, written=j.written, run_markdown=[r.markdown for r in j.runs])
     return out
+
+
+@app.post("/api/analysis/compose")
+async def analysis_compose(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """The team the composer would assemble for a dump, with the reason and the measure behind every part. Reads the
+    records (structure only) without running anyone."""
+    from swarmscope.agents.composer import compose, describe
+    from swarmscope.analysis.dump import detect
+    from swarmscope.engine import Engine
+    path = str(body.get("path", "")).strip().strip('"')
+    d = detect(path)
+    source = body.get("source") or d["known"] or "dump"
+    sl = {"mapping": body["mapping"]} if source == "dump" and body.get("mapping") else {"full": True} if source == "german_wiki" else None
+    loop = asyncio.get_running_loop()
+    e = await loop.run_in_executor(None, lambda: Engine(source, "default", path=d["path"], overrides={"llm.mode": "stub"},
+                                                        slice_override=sl))
+    if source == "dump":
+        from swarmscope.sources.generic_stream import infer_capabilities
+        infer_capabilities(e)
+    if body.get("composer") == "claude":
+        from swarmscope.agents.composer import compose_with_claude
+        c = await compose_with_claude(e, model=body.get("model", "claude-sonnet-5-5"), effort=body.get("effort", "low"),
+                                      focus=body.get("focus", ""))
+    else:
+        c = compose(e, body.get("choices") or None)
+    return {"source": source, **describe(c), "by": c.get("by", "rules"), "cost_usd": c.get("cost_usd", 0)}
 
 
 @app.post("/api/analysis/{jid}/stop")
@@ -842,15 +868,18 @@ def analysis_stop(jid: str) -> dict[str, Any]:
 
 
 @app.post("/api/analysis/{jid}/open")
-async def analysis_open(jid: str) -> dict[str, Any]:
+async def analysis_open(jid: str, body: dict[str, Any] = Body(default={})) -> dict[str, Any]:
     """Open an analysed dump in the full dashboard, paused at the end of the record, to explore it."""
     from swarmscope.analysis import jobs
     j = jobs.JOBS.get(jid)
-    if j is None or j.engine is None or j.status != "done":
+    if j is None or j.status != "done":
         raise HTTPException(409, "the analysis has not finished")
-    if S.engine and S.engine is not j.engine:
+    run = int(body.get("run", j.main)) if body else j.main
+    if not 0 <= run < len(j.runs) or j.runs[run].status != "done":
+        raise HTTPException(404, "no such run")
+    e = await jobs.ensure_engine(j, run)             # a compared team's engine is read again on demand
+    if S.engine and S.engine is not e:
         await S.engine.stop()
-    e = j.engine
     e.subscribers = S.clients
     if e.profile.source == "dump":
         try:

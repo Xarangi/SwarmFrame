@@ -188,7 +188,9 @@ currently believes, and what it has cost. Any of these can be put on a page from
 For logs you already have, **Analyze a dump** reads them after the fact. Point it at a folder or a file, drop files
 in, or use the sample. It shows what it found in each file and which field it takes as the time, who acted, what
 they did, what they acted on, their group and their text; **Fix the mapping** corrects a guess. Choose who writes the
-report: **Rules** (free, seconds) or **Claude**, which starts from the rules reading, investigates in rounds with the
+analyst team: **Compose one** for this data (Preview the team shows each part and why it is there), **Search**
+(several teams try the first 30% of the record and the best reads it all), **Compare** (several teams each read the
+whole record, side by side) or **A preset**. Then choose who writes the report: **Rules** (free, seconds) or **Claude**, which starts from the rules reading, investigates in rounds with the
 evidence tools (reading what was written, searching the text, following text that spread) and writes it up.
 
 <picture>
@@ -196,7 +198,10 @@ evidence tools (reading what was written, searching the text, following text tha
   <img alt="The report: a TL;DR, a timeline tied to record ids, then the analysis" src="screenshots/14-report-light.png">
 </picture>
 
-The report has a TL;DR, a timeline in which every line names its records, then the analysis. Click a record id to
+After a search or a comparison the report opens with a table of the teams: what each found, how much of it most
+teams agree on, how much of the record each read closely, its supported claims, agents and time; **show report**
+switches to that team's report. The report has a TL;DR, a timeline in which every line names its records, then the
+analysis. Click a record id to
 open it. **Download .md** saves it; **Explore in the dashboard** opens the whole analysis with every page, the World
 and the evidence drawer. The same thing from the command line: `swarmframe analyze path/to/logs --out report.md`.
 

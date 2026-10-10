@@ -351,6 +351,52 @@ A side mode beside live monitoring: a folder or file of logs in, a report with s
 - **CLI:** `swarmframe analyze <path> --out report.md [--source german_wiki] [--write claude --model ... --words 2500-3000]`,
   `swarmframe analyze <path> --detect` (structure only). Reports are also kept under `data/reports/`.
 
+### Strategies: which team reads the dump
+
+A dump can be read with any team, and several teams can be compared on the same record (`options.strategy`,
+`options.strategies`, `options.search`; CLI `--team`, `--compare`, `--search`):
+
+- **Compose one** (the default): the composer below assembles a team for this data. `composer: claude` lets Claude
+  choose among the same parts.
+- **A preset**: any team in `agents/topologies/` as it is, or `auto` for the selector's pick.
+- **Compare**: up to six teams each read the whole record. Without ground truth the comparison measures what can be
+  measured: the findings each team raised, how many of the teams agree on each (a finding most teams raised is the
+  *consensus*; recall against it is reported), what only one team found, how much of the record the team itself
+  read closely (records its agents looked at or cited), supported claims, investigations concluded, agents used,
+  cost and time. The report shown first is the best by that measure; every team's report can be opened.
+- **Search**: four variants of the composed team and the selector's pick each read the first 30% of the record;
+  they are scored (0.5 x consensus recall + 0.35 x read closely + 0.1 x supported claims, minus agents and cost)
+  and the best reads all of it.
+
+### The composer
+
+`agents/composer.py` assembles a team from the parts the library presets are made of, so a stream gets the readers
+and specialists its records call for rather than a whole preset. It measures the records first (structure only:
+counts and shares of self-reports, environment actions, stated goals, texts written by more than one author,
+look-alike names, groups, units and the candidate partition axes) and then:
+
+| Part | From | Switched on when |
+|---|---|---|
+| Lead (root) | `lead.yaml` | always |
+| Explorers (on call) | `lead.yaml` | always; sent for findings at investigate or above |
+| Readers | `triage_tree.yaml` | more than 40 units or 12 cohorts; cut by group, by a field with about 8 values, or by cohort |
+| Sector leads | `triage_tree.yaml` | more than 12 slices |
+| Integrity specialist | `desks.yaml` | agents describe their own work (standing at 5% of records) |
+| Goals specialist | `desks.yaml` | agents state goals |
+| Propagation specialist | `board_watch.yaml` | texts also written by another author (standing at 10) |
+| Environment specialist | `board_watch.yaml` | deletions, stops or denials (standing at 2% of records) |
+| Identity resolver | `board_watch.yaml` | partial identities with many look-alike names |
+| Diarist | `desks.yaml` | a named cast of 2 to 40 |
+| Chronicler, grade auditor, new-method specialist | `catalog_review.yaml` | a catalog (graded, for the auditor) |
+| Auditor | `triage_tree.yaml` | 200 records or more |
+
+Strong evidence makes a specialist standing; weaker evidence puts it on call (routed by question kind, the rest to
+explorers). Budgets and cadence scale with the population. Every part carries its reason and the measure behind it,
+the result is validated like any topology, and it can be chosen live (`agents.topology: composed`, or "Composed for
+this data" on the start screen), previewed (`POST /api/analysis/compose`), edited on the Organization screen and
+saved as a preset. `compose_with_claude` gives Claude the measures and the parts and accepts only a choice of
+standing / on call / off per part, a partition and a budget; the assembly and the checks stay in code.
+
 ### Testing against MessageBoardAuditBench
 
 [MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench) measures how well a model can

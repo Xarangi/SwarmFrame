@@ -137,7 +137,12 @@ def choose_topology(engine: "Engine", explicit: str | dict[str, Any] | None = No
               "resources": False, "groups": False}
     picked = select(sh, available) if sh.get("identity") != "unknown" else None
     try:
-        if explicit:
+        if explicit == "composed":
+            from swarmscope.agents.composer import compose
+            c = compose(engine)
+            t, by, reasons = c["topology"], "composer", [c["summary"]] + [f"{p['title']}: {p['reason']}" for p in c["parts"] if p["how"] != "off"]
+            engine.composition = c
+        elif explicit:
             tid = explicit if isinstance(explicit, str) else explicit.get("id", "custom")
             t = build(tid, ov.get("overrides") if tid in (ov.get("topology"), ov.get("preset")) else None) if isinstance(explicit, str) \
                 else from_dict(explicit, tid)
