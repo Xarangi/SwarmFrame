@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from swarmscope.agents.spec import TopologyError
-from fastapi import Body, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, File, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -746,7 +746,7 @@ async def dashboard_design(body: dict[str, Any] = Body(default={})) -> dict[str,
         e._notify("dashboard_designing", {"on": True})
         say("system", "Dashboard designer started" + (f": “{instruction}”" if instruction else "") + ".", "system")
         try:
-            res = await run_designer(e, instruction)
+            res = await run_designer(e, instruction, scope=body.get("scope", "layout"))
             cost = f" (about ${res['cost_usd']:.2f})" if res.get("cost_usd") else ""
             say("assistant", f"Dashboard redesigned, version {res['version']}{cost}. {res['summary']}", "copilot",
                 designer=True, backend=res["backend"])
@@ -764,6 +764,168 @@ async def dashboard_design(body: dict[str, Any] = Body(default={})) -> dict[str,
 
     asyncio.create_task(go())
     return {"started": True, "backend": "stub" if e.router.mode == "stub" else "claude_code"}
+
+
+# ------------------------------------------------------------------ post-analysis: a dump in, a report out
+@app.post("/api/analysis/detect")
+def analysis_detect(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """What is in a folder or file: formats, rows, fields and the guessed mapping. Structure only."""
+    from swarmscope.analysis.dump import detect
+    try:
+        return detect(str(body.get("path", "")).strip().strip('"'))
+    except (FileNotFoundError, OSError) as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.post("/api/analysis/sample")
+def analysis_sample() -> dict[str, Any]:
+    """A synthetic dump to try the analysis on (a planted swarm with neutral text), under data/samples/."""
+    from swarmscope.analysis.dump import detect, write_sample
+    d = ROOT / "data" / "samples" / "sample_dump"
+    if not (d / "agent_activity.jsonl.gz").exists():
+        write_sample(d)
+    return detect(str(d))
+
+
+@app.post("/api/analysis/upload")
+async def analysis_upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
+    """Files dropped in the browser are saved under data/uploads/<id>/ and detected like a folder."""
+    import time
+    from swarmscope.analysis.dump import detect
+    d = ROOT / "data" / "uploads" / f"up_{int(time.time() * 1000)}"
+    d.mkdir(parents=True, exist_ok=True)
+    for f in files[:60]:
+        name = Path(f.filename or "file").name
+        with open(d / name, "wb") as out:
+            while chunk := await f.read(1 << 20):
+                out.write(chunk)
+    return detect(str(d))
+
+
+@app.post("/api/analysis/start")
+async def analysis_start(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """{path, options: {source?, mapping?, write: rules | claude, model, effort, words, ignore_files, title}}."""
+    from swarmscope.analysis import jobs
+    try:
+        return jobs.start(str(body.get("path", "")).strip().strip('"'), body.get("options") or {}).public()
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.get("/api/analysis")
+def analysis_list() -> list[dict[str, Any]]:
+    from swarmscope.analysis import jobs
+    return [j.public() for j in sorted(jobs.JOBS.values(), key=lambda j: -j.started)][:20]
+
+
+@app.get("/api/analysis/{jid}")
+def analysis_get(jid: str) -> dict[str, Any]:
+    from swarmscope.analysis import jobs
+    j = jobs.JOBS.get(jid)
+    if j is None:
+        raise HTTPException(404, "no such analysis")
+    out = j.public()
+    if j.report is not None:
+        out.update(report=j.report, markdown=j.markdown, written=j.written)
+    return out
+
+
+@app.post("/api/analysis/{jid}/stop")
+def analysis_stop(jid: str) -> dict[str, Any]:
+    from swarmscope.analysis import jobs
+    j = jobs.JOBS.get(jid)
+    if j is None:
+        raise HTTPException(404, "no such analysis")
+    if j.task and not j.task.done():
+        j.task.cancel()
+    return {"ok": True}
+
+
+@app.post("/api/analysis/{jid}/open")
+async def analysis_open(jid: str) -> dict[str, Any]:
+    """Open an analysed dump in the full dashboard, paused at the end of the record, to explore it."""
+    from swarmscope.analysis import jobs
+    j = jobs.JOBS.get(jid)
+    if j is None or j.engine is None or j.status != "done":
+        raise HTTPException(409, "the analysis has not finished")
+    if S.engine and S.engine is not j.engine:
+        await S.engine.stop()
+    e = j.engine
+    e.subscribers = S.clients
+    if e.profile.source == "dump":
+        try:
+            from swarmscope.dashboard.designer import auto_design
+            spec, why = auto_design(e)
+            e.dashboard.replace(spec, "auto", why)
+        except Exception as exc:
+            e.router.errors.append(f"dashboard: {type(exc).__name__}: {exc}")
+    S.engine, S.params = e, {"source": e.profile.source, "path": j.path, "analysis": jid}
+    if S.hub is not None:
+        S.hub.attach(e)
+    e.clock.paused = True
+    e.start()
+    e.broadcast(force=True)
+    return {"ok": True, "session_id": e.snapshot().get("session_id")}
+
+
+# ------------------------------------------------------------------ the look (dashboard/theme.py)
+def _theme_changed(st: dict[str, Any]) -> None:
+    if S.engine is not None:
+        S.engine._notify("theme", st)
+
+
+@app.get("/api/theme")
+def theme_get() -> dict[str, Any]:
+    from swarmscope.dashboard import theme as T
+    return T.store().state()
+
+
+@app.get("/api/theme/options")
+def theme_options() -> dict[str, Any]:
+    from swarmscope.dashboard import theme as T
+    return T.options()
+
+
+@app.post("/api/theme")
+def theme_set(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Change the look: {changes: {preset, mode, accent, fonts, density, radius, surface, canvas, nav, nav_style,
+    headline, motion, colors}, rationale}. Refused (400) with the reason when text would be hard to read."""
+    from swarmscope.dashboard import theme as T
+    try:
+        st = T.store().apply(body.get("changes") or {}, by=body.get("by", "human"), rationale=body.get("rationale", ""))
+    except (T.ThemeError, ValueError, TypeError) as exc:
+        raise HTTPException(400, str(exc))
+    _theme_changed(st)
+    return st
+
+
+@app.post("/api/theme/undo")
+def theme_undo() -> dict[str, Any]:
+    from swarmscope.dashboard import theme as T
+    try:
+        st = T.store().undo()
+    except T.ThemeError as exc:
+        raise HTTPException(400, str(exc))
+    _theme_changed(st)
+    return st
+
+
+@app.post("/api/design")
+async def design(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """The designer: {instruction, scope: look | layout | all}. Without a model it applies what it understands at
+    once and says so; with a model a Claude session works through the same checked tools in the background."""
+    from swarmscope.dashboard.designer import free_design
+    instruction = str(body.get("instruction", "")).strip()[:600]
+    scope = body.get("scope", "all")
+    if not instruction:
+        raise HTTPException(400, "say what you would like changed")
+    e = S.engine
+    if e is None or e.router.mode == "stub" or body.get("free"):
+        res = free_design(e, instruction)
+        if e is None and res["ops"]:
+            res["summary"] += " (Layout changes need an open dashboard.)"
+        return res
+    return await dashboard_design({"instruction": instruction, "force": True, "orient": False, "scope": scope})
 
 
 # ------------------------------------------------------------------ the World (docs/WORLD_PLAN.md)

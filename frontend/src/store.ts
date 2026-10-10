@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import type { DashState, Snapshot } from './types'
+import { applyTheme } from './theme'
 
-export type Route = 'compose' | 'brief' | 'attention' | 'world' | 'investigations' | 'control' | 'hood' | 'settings' | 'organization'
+export type Route = 'compose' | 'analyze' | 'brief' | 'attention' | 'world' | 'investigations' | 'control' | 'hood' | 'settings' | 'organization'
   | 'monitor' | `page:${string}`
-const ROUTES = ['brief', 'attention', 'world', 'investigations', 'control', 'hood', 'settings', 'organization', 'monitor']
+const ROUTES = ['analyze', 'brief', 'attention', 'world', 'investigations', 'control', 'hood', 'settings', 'organization', 'monitor']
 
 export type StudioTab = 'add' | 'build' | 'ask' | 'history'
 export interface Toast { id: number; text: string; undo?: boolean }
@@ -127,6 +128,7 @@ export const useStore = create<UIState>((set, getState) => ({
         return
       }
       if (msg.type === 'dashboard') { getState().loadDash(); return }
+      if (msg.type === 'theme') { if (msg.data?.resolved) applyTheme(msg.data.resolved); return }
       if (msg.type === 'escalation') {
         const d = msg.data as { id: string; level: string; title: string; by: string }
         getState().showToast(`${d.level === 'PAGE' ? 'Act now' : 'Needs a decision'} · ${d.by}: ${d.title}`)

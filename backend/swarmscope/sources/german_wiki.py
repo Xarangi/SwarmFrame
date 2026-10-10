@@ -69,7 +69,7 @@ class GermanWikiAdapter:
             if path:
                 self.pack.capabilities.synthetic = False
         if path and path != "synthetic" and Path(path).exists():
-            if Path(path).is_dir() and (Path(path) / "revisions.jsonl.gz").exists():
+            if Path(path).is_dir() and ((Path(path) / "revisions.jsonl.gz").exists() or (Path(path) / "revisions.jsonl").exists()):
                 b = self._load_collusion(Path(path))
             else:
                 b = self._load_real(path)
@@ -100,9 +100,12 @@ class GermanWikiAdapter:
 
         def rows(name: str):
             f = d / name
-            if not f.exists():
-                return
-            with gzip.open(f, "rt", encoding="utf-8") as fh:
+            if not f.exists():                             # the same files uncompressed (e.g. a benchmark's copy)
+                f = d / name.removesuffix(".gz")
+                if not f.exists():
+                    return
+            opener = gzip.open if f.name.endswith(".gz") else open
+            with opener(f, "rt", encoding="utf-8") as fh:
                 for i, line in enumerate(fh):
                     if line.strip():
                         yield f"{name}:{i + 1}", json.loads(line)
@@ -181,7 +184,7 @@ class GermanWikiAdapter:
                     id=f"ev:{r.get('event_id') or loc}", ts=ts, source=SRC, actor=actor(r.get("actor_label"), "moderator"),
                     action="environment.revert", object=pid, locator=loc,
                     attributes={"family": fam_of.get(key, "other"), "target_agent": last_author.get(pid or "", "")}))
-            elif et == "probe":                            # page requests, not edits; the request kind is whitelisted
+            elif et in ("probe", "request"):               # page requests, not edits; the request kind is whitelisted
                 req = str(r.get("request_action") or "")
                 b.events.append(EvidenceEvent(
                     id=f"ev:{r.get('event_id') or loc}", ts=ts, source=SRC, actor=actor(r.get("actor_label") or "(visitor)"),

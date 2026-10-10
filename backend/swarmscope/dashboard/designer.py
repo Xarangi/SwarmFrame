@@ -250,6 +250,45 @@ class DashboardTools:
         self.e._notify("dashboard", res["spec"])
         return {"ok": True, "version": res["version"], "applied": res["applied"]}
 
+    # ---------------------------------------------------------------- the look (dashboard/theme.py)
+    def theme_options(self) -> dict[str, Any]:
+        from swarmscope.dashboard import theme as T
+        return T.options()
+
+    def theme_get(self) -> dict[str, Any]:
+        from swarmscope.dashboard import theme as T
+        st = T.store()
+        r = T.resolve(st.spec)
+        return {"spec": st.spec.model_dump(exclude={"updated"}), "fonts": r["font_names"], "attrs": r["attrs"],
+                "light": {k: r["modes"]["light"][k] for k in T.TOKENS},
+                "dark": {k: r["modes"]["dark"][k] for k in T.TOKENS}}
+
+    def theme_set(self, changes: dict[str, Any], rationale: str = "") -> dict[str, Any]:
+        from swarmscope.dashboard import theme as T
+        try:
+            st = T.store().apply(changes or {}, by=self.actor, rationale=rationale)
+        except (T.ThemeError, ValueError, TypeError) as exc:
+            return {"ok": False, "error": str(exc), "hint": "nothing was applied; adjust and retry"}
+        self._tell(st)
+        return {"ok": True, "version": st["spec"]["version"]}
+
+    def theme_undo(self) -> dict[str, Any]:
+        from swarmscope.dashboard import theme as T
+        try:
+            st = T.store().undo()
+        except T.ThemeError as exc:
+            return {"ok": False, "error": str(exc)}
+        self._tell(st)
+        return {"ok": True, "version": st["spec"]["version"]}
+
+    def _tell(self, st: dict[str, Any]) -> None:
+        try:
+            e = self._engine()
+        except Exception:
+            e = None
+        if e is not None:
+            e._notify("theme", st)
+
     def dashboard_undo(self) -> dict[str, Any]:
         try:
             res = self.e.dashboard.undo()
@@ -274,6 +313,17 @@ class DashboardTools:
          {"type": "object", "properties": {"ops": {"type": "array", "items": {"type": "object"}},
                                            "rationale": {"type": "string"}}, "required": ["ops"]}),
         ("dashboard_undo", "Undo the last dashboard change.", {"type": "object", "properties": {}}),
+        ("theme_options", "The whole design space for the look: presets, settings and their meanings, the typefaces "
+                          "allowed for each role, settable colour tokens, what is fixed and the readability rules.",
+         {"type": "object", "properties": {}}),
+        ("theme_get", "The current look: preset, settings, typefaces and the resolved colours in light and dark.",
+         {"type": "object", "properties": {}}),
+        ("theme_set", "Change the look with checked settings {preset, mode, accent, fonts {display, ui, mono}, density, "
+                      "radius, surface, canvas, nav, nav_style, headline, motion, colors {light|dark: {token: hex}}}. "
+                      "Refused with the reason if text would be hard to read. Versioned; undo with theme_undo.",
+         {"type": "object", "properties": {"changes": {"type": "object"}, "rationale": {"type": "string"}},
+          "required": ["changes"]}),
+        ("theme_undo", "Undo the last change to the look.", {"type": "object", "properties": {}}),
         ("dashboard_lens", "Saved layouts per scenario (lenses): action list | save | switch | delete | rename, with "
                            "name (and new_name for rename). Save copies the current dashboard under a new name.",
          {"type": "object", "properties": {"action": {"type": "string"}, "name": {"type": "string"},
@@ -301,11 +351,58 @@ DESIGN_SCHEMA = {"type": "object", "properties": {
     "open_questions": {"type": "array", "items": {"type": "string"}}}, "required": ["summary", "pages"]}
 
 
-async def run_designer(engine: "Engine", instruction: str = "", post: Callable[[str], Any] | None = None) -> dict[str, Any]:
-    """One Claude Code session that customizes the dashboard around the stream. Falls back to auto_design in stub mode."""
+def free_design(engine: "Engine | None", instruction: str) -> dict[str, Any]:
+    """The designer without a model: read a plain request into checked theme changes and Brief ops, and apply them.
+    It says what it understood; anything else in the request is left for a model to do."""
+    from swarmscope.dashboard import theme as T
+    ch, ops, said = T.interpret(instruction)
+    applied, errors = [], []
+    if ch:
+        try:
+            T.store().apply(ch, by="designer", rationale=f"asked: {instruction[:200]}")
+            applied.append("look")
+        except T.ThemeError as exc:
+            errors.append(str(exc))
+    if ops and engine is not None:
+        try:
+            engine.dashboard.apply_ops(engine, ops, by="designer", rationale=f"asked: {instruction[:200]}")
+            engine._notify("dashboard", engine.dashboard.spec.model_dump())
+            applied.append("layout")
+        except SpecError as exc:
+            errors.append(str(exc))
+    if engine is not None and "look" in applied:
+        engine._notify("theme", T.store().state())
+    if said and not errors:
+        summary = "Changed " + ", ".join(said) + "."
+    elif errors:
+        summary = "Nothing changed: " + "; ".join(errors)
+    else:
+        summary = ("I did not recognise a change I can make without a model. Try words like dark, compact, a teal "
+                   "accent, flat panels, Paper, Console, Clinic, no animation, or hide the World.")
+    return {"backend": "stub", "understood": said, "applied": applied, "errors": errors, "summary": summary,
+            "theme": ch, "ops": ops}
+
+
+LOOK_PROMPT = ("You design the look of SwarmFrame, a dashboard for watching agent swarms, inside a fixed design space. "
+               "You never write CSS or code: you change the look only through theme_set, whose settings are checked "
+               "(typefaces from a list, colours checked for readability in light and dark, the colours that carry "
+               "meaning are fixed). Call theme_options and theme_get first. Make the smallest change that does what "
+               "was asked; start from a preset only when a whole new look is wanted. If a change is refused, read "
+               "the reason, adjust and try again. Layout requests (pages, panels, the Brief) go through "
+               "dashboard_edit. Finish with a one-paragraph summary of what you changed.")
+
+
+async def run_designer(engine: "Engine", instruction: str = "", post: Callable[[str], Any] | None = None,
+                       scope: str = "layout") -> dict[str, Any]:
+    """One Claude Code session that customizes the dashboard, constrained to checked ops (layout) and checked theme
+    settings (look). Without a model: the free designer reads plain requests; the free composer fills the layout."""
     if getattr(engine.pack, "source", {}).get("infer_capabilities"):
         from swarmscope.sources.generic_stream import infer_capabilities
         infer_capabilities(engine)
+    if engine.router.mode == "stub" and instruction:
+        free = free_design(engine, instruction)
+        if free["applied"] or free["errors"] or scope in ("look", "all"):
+            return {**free, "version": engine.dashboard.spec.version, "pages": []}
     if engine.router.mode == "stub":
         import copy
         from swarmscope.dashboard.spec import merge_pages
@@ -338,7 +435,13 @@ async def run_designer(engine: "Engine", instruction: str = "", post: Callable[[
     effort = llm.get("cheap", {}).get("effort", "low") if llm.get("mode") == "cheap" else role.get("effort", "low")
     system = compose(["dashboard-designer"], []) or "You design monitoring dashboards."
     builtins = [p.title for p in engine.dashboard.spec.pages if p.by == "pack" and p.id != "brief"]
-    prompt = ("Compose this dashboard for the stream it is watching: the Brief (page 'brief') gets one or two signature "
+    if scope == "look":
+        system = LOOK_PROMPT
+    prompt = (f"The viewer asked for this change to the look: {instruction}" if scope == "look" else
+              f"The viewer asked: {instruction}\n\nThis may be about the layout (use dashboard_edit, previewing new "
+              "views first), the look (theme_options, then theme_set), or both. Change only what was asked and finish "
+              "with a short summary." if scope == "all" and instruction else "") or (
+             "Compose this dashboard for the stream it is watching: the Brief (page 'brief') gets one or two signature "
               "views, and there are at most three Activity pages in all, each with a one-line `reason`. "
               + (f"The source ships pages ({', '.join(builtins)}); keep them and refine around them. "
                  if builtins else "")

@@ -156,6 +156,41 @@ class EvidenceTools:
             return "no such artifact"
         return boundary.untrusted(text, source=self.source, ref=artifact_id, cap=1500)
 
+    def search_text(self, query: str, limit: int = 15) -> list[dict[str, Any]]:
+        """Records whose written text contains `query` (case-insensitive), oldest first, each with a short excerpt
+        around the match wrapped as untrusted evidence. For roles that may read raw text."""
+        if self.role in PRIVILEGED_ROLES:
+            return [{"error": "search_text is not available to this role"}]
+        q = str(query or "").strip()
+        if len(q) < 3:
+            return [{"error": "search for at least 3 characters"}]
+        h = self.horizon().replace(tzinfo=None)
+        rows = self.store.sql(
+            "SELECT e.id, e.ts, e.actor, e.object, e.action, e.artifact, t.text FROM events e JOIN artifact_text t "
+            "ON t.id = e.artifact WHERE e.ts <= ? AND t.text ILIKE ? ORDER BY e.ts LIMIT ?",
+            [h, f"%{q.replace('%', '')}%", max(1, min(int(limit), 40))])
+        out = []
+        for r in rows:
+            txt = r["text"] or ""
+            i = txt.lower().find(q.lower())
+            snip = txt[max(0, i - 160): i + len(q) + 240] if i >= 0 else txt[:400]
+            out.append({"event": r["id"], "ts": str(r["ts"])[:16], "actor": self._label(r["actor"]), "object": self._label(r["object"]),
+                        "action": r["action"], "artifact": r["artifact"],
+                        "excerpt": boundary.untrusted(snip, source=self.source, ref=r["artifact"], cap=500)})
+        self._log("search_text", {"query": q}, len(out))
+        return out
+
+    def history(self, object: str, limit: int = 40) -> list[dict[str, Any]]:
+        """Everything that happened to one resource (a page, a file, a room) in order: who, what, when, and the
+        artifact id of any text written, so it can be read with read_raw."""
+        oid = self._resolve(object) or object
+        h = self.horizon().replace(tzinfo=None)
+        rows = self.store.sql("SELECT id, ts, actor, action, artifact FROM events WHERE object = ? AND ts <= ? ORDER BY ts LIMIT ?",
+                              [oid, h, max(1, min(int(limit), 200))])
+        self._log("history", {"object": object}, len(rows))
+        return [{"event": r["id"], "ts": str(r["ts"])[:16], "actor": self._label(r["actor"]), "action": r["action"],
+                 "artifact": r["artifact"]} for r in rows]
+
     def observations(self, kind: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
         """Watcher observations (deterministic detectors) visible at the horizon, within scope."""
         h = self.horizon()
@@ -342,10 +377,18 @@ class EvidenceTools:
             ("sample_events", "Uniform random sample of events in scope.",
              {"type": "object", "properties": {"n": I, "family": S, "hours": {"type": "number"}}}, self.sample_events),
         ]
+        specs.append(("history", "Everything that happened to one resource (page, file, room) in order, with artifact ids "
+                               "of the text written, to read with read_raw.",
+                      {"type": "object", "properties": {"object": S, "limit": {"type": "integer"}}, "required": ["object"]},
+                      self.history))
         if allow_raw and self.role not in PRIVILEGED_ROLES:
             specs.append(("read_raw", "Read an artifact's raw text, wrapped as untrusted evidence. Use sparingly.",
                           {"type": "object", "properties": {"artifact_id": S}, "required": ["artifact_id"]},
                           self.read_raw))
+            specs.append(("search_text", "Find records whose written text contains a word or phrase (case-insensitive), "
+                                         "oldest first, with untrusted excerpts. Use it to learn what was discussed.",
+                          {"type": "object", "properties": {"query": S, "limit": {"type": "integer"}}, "required": ["query"]},
+                          self.search_text))
         if self.allowed is not None:
             specs = [s for s in specs if s[0] in self.allowed]
         tools = [tool(n, d, schema)(wrap(fn)) for n, d, schema, fn in specs]

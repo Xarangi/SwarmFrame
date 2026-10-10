@@ -266,17 +266,102 @@ A spec holds the Brief's settings and every page (the Brief is page `brief`).
 
 - **On session start** the source's default views load (`packs/<id>/dashboard.yaml`: a `brief:` block and pages);
   sources without one get a Brief composed from the stream profile.
-- **Edit → Ask Claude** runs one Claude Code session with the dashboard tools and the
-  [dashboard-designer skill](../.claude/skills/dashboard-designer/SKILL.md) when models are on; with models off it is
-  the free composer. Claude sees capabilities, fields, categorical values and the scale layer, never agent text.
-- **The copilot and your own Claude Code session** have the same tools: `stream_profile`, `view_catalog`,
-  `view_preview`, `dashboard_edit`, `dashboard_undo`, `dashboard_lens`.
+- **The designer is constrained.** It composes from a fixed library of views and a fixed set of look settings, and
+  every change it makes goes through the same checked operations a person uses. It never writes code or CSS.
+  Edit → Ask the designer, Settings → Look → Describe the look, the copilot and your own Claude Code session all
+  reach it. With a model on, one Claude Code session works with the dashboard and theme tools and the
+  [dashboard-designer skill](../.claude/skills/dashboard-designer/SKILL.md). With models off, the free designer
+  reads plain requests ("dark, compact, a teal accent, hide the World") into the same operations and says what it
+  understood. Claude sees capabilities, fields, categorical values and the scale layer, never agent text.
+- **Tools:** `stream_profile`, `view_catalog`, `view_preview`, `dashboard_edit`, `dashboard_undo`, `dashboard_lens`,
+  `theme_options`, `theme_get`, `theme_set`, `theme_undo`.
 - **The Brief digest** (`backend/swarmscope/dashboard/brief.py`) groups and ranks findings, writes their next step
   and keeps the status sentence consistent, in every LLM mode.
-- **Views** are a primitive (`stat`, `timeseries`, `bar`, `heatmap`, `table`, `note`) plus a query in a small
-  language: filters, a time range clipped to the replay clock, up to two group-by fields, and a metric. Derived
-  sources are cohorts, templates, triage, claims, the organization and observations. There is no raw SQL, and
-  attributes that hold free text are refused.
+- **The view library.** A view is a primitive plus a query in a small language: filters, a time range clipped to the
+  replay clock, up to two group-by fields, and a metric. Derived sources are cohorts, templates, triage, claims, the
+  organization and observations. There is no raw SQL, and attributes that hold free text are refused.
+
+  | Primitive | Shows | Query shape |
+  |---|---|---|
+  | `stat` | one number, or a few tiles | no group_by, or one small dimension |
+  | `timeseries` | stacked area over time | `[ts:<bucket>]` or `[ts:<bucket>, <dimension>]` |
+  | `bar` | a ranking | `[<dimension>]` |
+  | `heatmap` | a grid of two dimensions | `[<dimension>, <dimension or ts:bucket>]` |
+  | `table` | rows of any result | anything |
+  | `feed` | the latest records, each opening its record | no group_by; `top` = rows |
+  | `graph` | who works with whom: linked through shared values | `[actor, object]` or two dimensions |
+  | `bipartite` | two linked columns weighted by count | two dimensions |
+  | `swimlane` | one lane per value, marks over time | `[<dimension>, ts:<bucket>]` |
+  | `note` | a short text from the designer | none |
+
+  Each checked view records what it `requires` (identities for `actor`, resources for `object`, timestamps for time
+  views); a view a source cannot support is refused. Views link to their evidence: a click on a bar, row, node or lane
+  opens the records behind it (`link: "none"` turns that off).
+
+## The look
+
+One theme for the whole app (`data/theme.json`, `backend/swarmscope/dashboard/theme.py`), versioned and undoable,
+applied by `frontend/src/theme.ts` as CSS custom properties and data attributes. Everything in `styles.css` reads
+from those tokens.
+
+| Setting | Values |
+|---|---|
+| `preset` | `observatory` (the default), `paper`, `console`, `clinic`, `signal` |
+| `mode` | `system`, `light`, `dark` |
+| `accent` | a hex colour, or a name (`teal`, `blue`, `purple`, ...) tuned separately for light and dark |
+| `fonts` | `display`, `ui`, `mono`, each from a fixed list of Google Fonts for that role |
+| `density` | `compact`, `comfortable`, `roomy` (type size and spacing) |
+| `radius` | 0 to 18 px |
+| `surface` | `plate` (hairline with registration marks), `card`, `flat`, `outline` |
+| `canvas` | `dots`, `grid`, `plain` |
+| `nav`, `nav_style` | `dark` or `light` rail; `full` or `icons` only |
+| `headline`, `labels`, `motion` | `small`/`medium`/`large`; `mono`/`sans`; `full`/`reduced`/`none` |
+| `colors` | per-mode overrides of `bg`, `surface`, `raised`, `sunken`, `ink`, `ink2`, `ink3`, `ink4`, `line`, `line2`, `accent`, `data` |
+
+Every change is resolved for both modes and checked before it applies: main text at least 7:1 against panels and the
+page, secondary text 4.5:1, muted text 4:1, the accent 3:1, accent-coloured text 4.5:1, the rail's text 7:1. A change
+that fails is refused with the pair and the ratio. The colours that carry meaning (finding levels, evidence status,
+the categorical chart palette) are not settable. API: `GET /api/theme`, `GET /api/theme/options`, `POST /api/theme`
+`{changes}`, `POST /api/theme/undo`, `POST /api/design` `{instruction, scope: look | layout | all}`.
+
+## Analyze a dump (post-analysis)
+
+A side mode beside live monitoring: a folder or file of logs in, a report with sources out
+(`backend/swarmscope/analysis/`).
+
+- **Reading.** `dump.detect(path)` lists the files with their format, rows, fields and a guess at which field is
+  the time, who acted, what they did, what they acted on, their group, their text and the record id (from field
+  names and value shapes, never content). JSON, JSON lines, CSV, gzipped or zipped. Files without a time field are
+  listed and left out. A folder SwarmFrame knows (the collusion.wiki export, plain or gzipped; the Transluce catalog;
+  the AI Village export) is read with that source's own adapter; anything else with `DumpAdapter` and the mapping,
+  which can be corrected in the UI. Capabilities are inferred from what the records contain.
+- **Running.** A job (`analysis/jobs.py`) builds an engine, reads every window through the same watchers, monitors
+  and analyst team as live monitoring, with fixed rules (free and repeatable), and builds the report.
+- **The report** (`analysis/report.py`) has a TL;DR, a timeline tied to record ids, then the analysis: the data and
+  what it cannot show, when it happened, the groups, the busiest actors, where they converged, how the environment
+  responded, what stands out (each detection with its innocent reading and a confidence), what the analysts flagged,
+  and how it was read. Built from structure only.
+- **Claude's write-up** (`analysis/writer.py`, optional) starts from that reading and investigates with the evidence
+  tools, including `history` (everything that happened to one resource), `search_text` and `read_raw` (agent text,
+  wrapped as untrusted), then writes the report with confidence levels and record ids.
+- **Exploring.** "Explore in the dashboard" opens the finished engine as the session, paused at the end of the
+  record; clicking a record id in the report opens it in the evidence drawer.
+- **API:** `POST /api/analysis/detect {path}`, `POST /api/analysis/upload` (files), `POST /api/analysis/sample`,
+  `POST /api/analysis/start {path, options}`, `GET /api/analysis/{id}`, `POST /api/analysis/{id}/open`.
+- **CLI:** `swarmframe analyze <path> --out report.md [--source german_wiki] [--write claude --model ... --words 2500-3000]`,
+  `swarmframe analyze <path> --detect` (structure only). Reports are also kept under `data/reports/`.
+
+### Testing against MessageBoardAuditBench
+
+[MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench) measures how well a model can
+reconstruct a published investigation of the German message board from its logs. `scripts/mbab_grade.py` reproduces
+its grading code path (the committed v2 sheets with 38 points and the holistic TL;DR sheet, the system prompt, the
+JSON parsing and retry, `max(2s - 1, 0)` per point, headline 0.7 x points + 0.3 x TL;DR) with Claude through the
+Claude Code login. The sheets and the answer key are filled in code and never printed. To build the benchmark's
+`verbatim` data without Docker: download `full-wiki-logs.zip` (SHA256 `eb68aa12...25ae`), unzip it, run the
+benchmark's `scripts/strip_analysis_fields.py` and `scripts/fill_verbatim.py` (Python standard library only; use
+`python -X utf8` on Windows), normalise line endings, and check the four files against `data/SHA256SUMS.variants`.
+Scores from a judge other than the benchmark's published one are not comparable to its leaderboard.
 
 ## The World: a 3D map of the swarm
 

@@ -192,3 +192,31 @@ def test_custom_words_reach_the_brief(eng):
         assert "agent" not in d["status"].lower().replace("agentic", "")
     finally:
         eng.dashboard.spec.terminology = st0
+
+
+def test_the_library_of_views_feed_network_two_sided_and_lanes(eng):
+    """The designer composes from a fixed library; each new primitive is checked against the data, says what it
+    needs, and carries the ids a click opens."""
+    from swarmscope.dashboard.spec import panel_data
+    st = fresh(eng)
+    allt = {"all": True}
+    panels = [
+        {"id": "latest", "title": "Latest", "view": {"primitive": "feed", "query": {"time": allt, "top": 10}}},
+        {"id": "net", "title": "Who works with whom", "view": {"primitive": "graph", "query": {"group_by": ["actor", "object"], "time": allt}}},
+        {"id": "two", "title": "Agents and places", "view": {"primitive": "bipartite", "query": {"group_by": ["actor", "object"], "time": allt}}},
+        {"id": "lanes", "title": "Lanes", "view": {"primitive": "swimlane", "query": {"group_by": ["actor", "ts:hour"], "time": allt}}},
+    ]
+    st.apply_ops(eng, [{"op": "add_page", "id": "library", "title": "Library", "panels": panels}])
+    pg = page(st, "library")
+    by = {p.id: p for p in pg.panels}
+    assert by["latest"].view.query["list"] is True
+    assert by["net"].view.requires == ["identities", "resources"] and by["lanes"].view.requires == ["identities", "timestamps"]
+    feed = panel_data(eng, by["latest"])
+    assert feed["columns"][:2] == ["time", "actor"] and len(feed["meta"]["event_ids"]) == len(feed["rows"]) > 0
+    assert all(eid.startswith(("ev", "ss")) or eid for eid in feed["meta"]["event_ids"])
+    net = panel_data(eng, by["net"])
+    assert net["meta"]["ids"] and net["meta"]["ids"][0][0]          # the entity id behind each label
+    with pytest.raises(SpecError, match="two group_by dimensions"):
+        st.apply_ops(eng, [{"op": "add_panel", "page": "library", "panel": {"id": "bad", "title": "x", "view": {"primitive": "graph", "query": {"group_by": ["actor"]}}}}])
+    with pytest.raises(SpecError, match="swimlane needs"):
+        st.apply_ops(eng, [{"op": "add_panel", "page": "library", "panel": {"id": "bad", "title": "x", "view": {"primitive": "swimlane", "query": {"group_by": ["ts:hour", "actor"]}}}}])

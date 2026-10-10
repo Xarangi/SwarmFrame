@@ -27,8 +27,18 @@ PRIMITIVES = {
     "bar": "Horizontal bars ranked by value. group_by [<dimension>].",
     "heatmap": "Grid of two dimensions, e.g. [object, ts:day] or [object, family].",
     "table": "Rows of any grouped result.",
+    "feed": "The latest matching events as a list (time, who, what, where); each row opens its record. Query with no "
+            "group_by; `top` is how many rows (default 20).",
+    "graph": "Who works with whom: a network of the first dimension, linked when they share values of the second. "
+             "group_by [actor, object] (agents linked through shared resources) or any two dimensions.",
+    "bipartite": "Two columns joined by lines weighted by count, e.g. agents and the resources they touch. "
+                 "group_by [two dimensions].",
+    "swimlane": "One lane per value of the first dimension, with marks over time sized by count. "
+                "group_by [dimension, ts:<bucket>].",
     "note": "A short text written by the designer: what this page is for and how to read it. No query.",
 }
+# what a field in a query needs the source to have
+FIELD_NEEDS = {"actor": "identities", "object": "resources"}
 BUILTINS = {
     "brief": "The live brief: what SwarmFrame has noticed, newest first", "organization": "The analyst team",
     "population": "Agents and shared resources (needs identities)", "timeline": "Activity by workstream",
@@ -57,6 +67,8 @@ class ViewSpec(BaseModel):
     primitive: str
     query: dict[str, Any] = Field(default_factory=dict)
     options: dict[str, Any] = Field(default_factory=dict)       # e.g. {"stack": true, "unit": "reports", "text": "..."}
+    requires: list[str] = Field(default_factory=list)          # capabilities the view needs (filled in when checked)
+    link: Literal["evidence", "none"] = "evidence"             # clicking a mark opens the records behind it
 
 
 class PanelSpec(BaseModel):
@@ -132,12 +144,29 @@ def _check_panel(engine: "Engine", p: dict[str, Any]) -> PanelSpec:
         ps.view.options["text"] = str(ps.view.options["text"])[:1200]
         return ps
     from swarmscope.dashboard.profile import text_attributes
+    prim = ps.view.primitive
+    q = ps.view.query
+    if prim == "feed":
+        q["list"] = True
+    elif q.get("list"):
+        raise SpecError(f"panel {ps.id}: only a feed lists events; drop `list`")
+    dims = [str(x) for x in (q.get("group_by") or [])] + [str(k) for k in (q.get("where") or {})]
+    needs = sorted({FIELD_NEEDS[d] for d in dims if d in FIELD_NEEDS}
+                   | ({"timestamps"} if prim in ("timeseries", "swimlane") else set()))
+    missing = [c for c in needs if not engine.profile.has(c)]
+    if missing and q.get("from", "events") == "events":
+        raise SpecError(f"panel {ps.id}: this source has no {', '.join(missing)}, which the view needs")
+    ps.view.requires = needs
     try:
-        Q.run(engine, ps.view.query, text_attributes(engine))
+        Q.run(engine, q, text_attributes(engine))
     except Q.QueryError as exc:
         raise SpecError(f"panel {ps.id}: {exc}") from exc
-    prim = ps.view.primitive
-    g = len(ps.view.query.get("group_by") or [])
+    gb = [str(x) for x in (q.get("group_by") or [])]
+    g = len(gb)
+    if prim in ("graph", "bipartite") and (g != 2 or any(x.startswith("ts:") for x in gb)):
+        raise SpecError(f"panel {ps.id}: a {prim} needs two group_by dimensions that are not time, e.g. [actor, object]")
+    if prim == "swimlane" and (g != 2 or sum(x.startswith("ts:") for x in gb) != 1 or gb[0].startswith("ts:")):
+        raise SpecError(f"panel {ps.id}: a swimlane needs group_by [dimension, ts:<bucket>]")
     if prim == "timeseries" and not any(str(x).startswith("ts:") for x in ps.view.query.get("group_by") or []):
         raise SpecError(f"panel {ps.id}: timeseries needs a ts:<bucket> in group_by")
     if prim == "heatmap" and g != 2 and ps.view.query.get("from", "events") == "events":

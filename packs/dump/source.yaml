@@ -1,0 +1,21 @@
+id: dump
+title: A dump
+description: >
+  Any folder or file of agent logs, read after the fact: JSON, JSON lines or CSV, gzipped or zipped. SwarmFrame guesses
+  which field is the time, who acted, what they did and what they acted on (you can correct it), reads the whole
+  record at once, and writes a report with sources. Capabilities are inferred from what the records contain.
+adapter: swarmscope.analysis.dump:DumpAdapter
+entity_noun: agent
+resource_noun: resource
+group_noun: group
+workstream_noun: kind of record
+naming: >
+  Names are the values of whatever field was mapped to "who acted"; resources are the values of the "acted on" field. A
+  kind of record is the file it came from, or the mapped family field.
+live: false
+analysis_only: true
+window_minutes: 60
+skip_empty_windows: true
+default_path: data/dump
+exposure_families: []
+environment_actions: [environment.operator_stop, environment.moderation_delete]

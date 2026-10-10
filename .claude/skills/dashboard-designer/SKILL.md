@@ -33,6 +33,18 @@ cannot show it.
 - `view_preview`: run a candidate view against live data. Always preview before adding.
 - `dashboard_edit`: apply ops atomically; nothing applies if one fails. Every change is versioned and undoable.
 - `dashboard_undo`, `dashboard_lens`.
+- `theme_options`, `theme_get`, `theme_set`, `theme_undo`: the look (see below).
+
+## The look
+
+You change how the dashboard looks only through `theme_set`, never with CSS or code. The design space is fixed and
+every value is checked: a preset (observatory, paper, console, clinic, signal), light or dark, an accent (a hex or a
+named colour, tuned per mode), the three typefaces (from a list per role: display, ui, mono), density, corner
+radius, how panels are drawn, the background, the rail, headline size, label style and motion, and per-mode colour
+tokens. Text must stay readable in both modes; a change that fails is refused with the reason, so adjust and retry.
+The colours that carry meaning (finding levels, evidence status, the chart palette) cannot be changed, so a finding
+reads the same in every look. Call `theme_options` first, change only what was asked, and start from a preset only
+when a whole new look is wanted.
 
 ## How to work
 
@@ -50,7 +62,13 @@ cannot show it.
    - ranking: `bar` with `top` 10 to 15;
    - two categorical dimensions, or category by time: `heatmap`;
    - a count that matters on its own (for example significant-grade reports): `stat`;
-   - detector output or anything with several columns: `table`.
+   - detector output or anything with several columns: `table`;
+   - the latest records themselves (time, who, what, where), each opening its record: `feed` (no group_by, `top` 10-30);
+   - who works with whom: `graph`, group_by [actor, object] (agents linked through shared resources);
+   - which agents touch which resources, or any two dimensions as two linked columns: `bipartite`;
+   - when each agent (or group, or resource) was busy: `swimlane`, group_by [dimension, ts:<bucket>].
+   Every view says what it needs (`requires` is filled in when it is checked) and links to its evidence: a click on a
+   bar, row, node or lane opens the records behind it. Set `link: "none"` only for purely decorative counts.
 6. **Show the base.** Put totals next to subsets (all reports beside significant reports).
 7. **Respect grades.** If the source grades its evidence, show the grade as a dimension rather than mixing grades.
 8. **Keep it small.** Four to six panels a page. Remove views that duplicate others. A page the viewer has to scroll

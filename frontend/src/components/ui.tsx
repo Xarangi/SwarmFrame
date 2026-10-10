@@ -192,6 +192,10 @@ const ICONS: Record<string, React.ReactNode> = {
   clock: <><circle cx="12" cy="12" r="9" />{P('M12 7v5l3 2')}</>,
   snooze: <>{P('M4 4h6l-6 7h6')}{P('M13 12h7l-7 8h7')}</>,
   spark: <>{P('M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6')}</>,
+  file: <>{P('M6 3h8l4 4v14H6V3Z')}{P('M14 3v4h4')}{P('M9 12h6M9 16h6')}</>,
+  palette: <>{P('M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.7-1.7H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3Z')}<circle cx="7.5" cy="11" r="1.2" /><circle cx="10.5" cy="7" r="1.2" /><circle cx="15" cy="7.5" r="1.2" /></>,
+  upload: <>{P('M12 16V4')}{P('m7 9 5-5 5 5')}{P('M4 16v4h16v-4')}</>,
+  download: <>{P('M12 4v12')}{P('m7 11 5 5 5-5')}{P('M4 20h16')}</>,
 }
 export function Icon({ name, size = 18, stroke = 1.6 }: { name: string; size?: number; stroke?: number }) {
   return (

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { get, post } from '../api'
 import { ChatMsg, useStore } from '../store'
-import { fmtTime, Icon, Seg, Toggle } from './ui'
+import { fmtTime, Icon } from './ui'
+import { Menu } from './kit'
 import { CiteMarks, openCite, SourceList } from './findings'
 import { StudyGuide } from '../screens/Compose'
 import type { Cite } from '../types'
@@ -34,7 +35,6 @@ export function ChatDock({ docked = false }: { docked?: boolean }) {
   const { chat, setChat, chatOpen, setChatOpen, typing } = useStore()
   const [st, setSt] = useState<ChatState | null>(null)
   const [text, setText] = useState('')
-  const [showSetup, setShowSetup] = useState(false)
   const end = useRef<HTMLDivElement>(null)
   const tick = useStore((s) => s.tick)
   const load = () => get<ChatState>('/api/chat').then((d) => { setSt(d); setChat(d.messages) }).catch(() => {})
@@ -53,7 +53,7 @@ export function ChatDock({ docked = false }: { docked?: boolean }) {
     return (
       <button className="dock-rail" onClick={() => { setSeenAt(Date.now()); setChatOpen(true) }} aria-label="Open SwarmFrame live">
         <span className="live-dot run" />
-        <span className="dock-rail-l">SwarmFrame · live</span>
+        <span className="dock-rail-l">Live</span>
         {unseen > 0 && <span className="count">{unseen}</span>}
       </button>
     )
@@ -79,57 +79,40 @@ export function ChatDock({ docked = false }: { docked?: boolean }) {
   const c = snap?.clock
   const state = !c ? '' : c.live ? 'live' : lr ? (lr.on ? 'live replay' : 'catching up') : c.done ? 'replay ended' : c.paused ? 'paused' : 'replaying'
   const mode = snap?.org.llm_label?.short ?? (snap?.org.llm_mode === 'stub' ? 'rules only' : 'Claude')
+  const narrate = st?.narrate ? (st.narrate.on ? String(st.narrate.every_s) : 'off') : '60'
+  const commentary = st?.commentary ? (st.commentary.on ? String(st.commentary.every_s) : 'off') : '300'
   return (
     <aside className={`chat-dock ${docked ? 'docked' : ''}`} aria-label="SwarmFrame live">
       <div className="chat-head">
         <div className="row" style={{ gap: 8 }}>
           <span className={`live-dot ${state === 'paused' || state === 'replay ended' ? 'off' : 'run'}`} />
-          <span className="display" style={{ fontSize: 19 }}>SwarmFrame <span className="muted" style={{ fontStyle: 'italic' }}>· live</span></span>
-          <button className="btn ghost icon-btn" style={{ marginLeft: 'auto' }} title={docked ? 'Collapse' : 'Close'} onClick={() => setChatOpen(false)}><Icon name={docked ? 'chevron' : 'x'} size={15} /></button>
+          <span className="chat-title">Live</span>
+          <span style={{ flex: 1 }} />
+          <Menu label="" icon="more" variant="ghost icon-btn" items={[
+            { label: 'What to show', head: true },
+            { label: 'Everything', icon: view === 'all' ? 'check' : undefined, hint: 'activity lines, findings and conversation', onClick: () => { setView('all'); localStorage.setItem('ss.chatView', 'all') } },
+            { label: 'Only the conversation', icon: view === 'talk' ? 'check' : undefined, onClick: () => { setView('talk'); localStorage.setItem('ss.chatView', 'talk') } },
+            { sep: true, label: '' },
+            ...([['0', 'Activity line every window'], ['60', 'Activity line every minute'], ['300', 'Activity line every 5 minutes'], ['off', 'No activity lines']] as [string, string][]).map(([v, l]) => ({
+              label: l, icon: narrate === v ? 'check' : undefined, onClick: () => settings({ narrate: v === 'off' ? { on: false } : { on: true, every_s: +v } }) })),
+            ...(snap?.org.llm_mode !== 'stub' ? [{ sep: true, label: '' }, ...([['300', 'Lead summary every 5 minutes'], ['900', 'Lead summary every 15 minutes'], ['off', 'No lead summaries']] as [string, string][]).map(([v, l]) => ({
+              label: l, icon: commentary === v ? 'check' : undefined, onClick: () => settings({ commentary: v === 'off' ? { on: false } : { on: true, every_s: +v } }) }))] : []),
+            { sep: true, label: '' },
+            { label: st?.watch.on ? 'Stop pushing findings to the assistant' : 'Push findings to the assistant', icon: 'eye', hint: 'new findings and revisions go to the agent as they happen', onClick: () => settings({ watch: { on: !st?.watch.on } }) },
+            { label: target === 'copilot' ? 'Talk to my own Claude Code session' : 'Talk to the built-in assistant', icon: 'chat', onClick: () => settings({ target: target === 'copilot' ? 'channel' : 'copilot' }) },
+            { label: 'New conversation', icon: 'undo', onClick: () => settings({ reset: true }) },
+          ]} />
+          <button className="btn ghost icon-btn" title={docked ? 'Collapse' : 'Close'} onClick={() => setChatOpen(false)}><Icon name={docked ? 'chevron' : 'x'} size={15} /></button>
         </div>
-        <div className="dock-status mono">
+        <div className="chat-sub">
           <span>{state}{c && !c.live ? ` · ${fmtTime(c.now)}` : ''}</span>{(c?.live || lr?.on) && !c?.paused && <NextUpdate every={c!.window_s} />}<span>·</span><span>{mode}</span>
-          <span style={{ marginLeft: 'auto' }} className="seg sm">
-            <button className={view === 'all' ? 'on' : ''} onClick={() => { setView('all'); localStorage.setItem('ss.chatView', 'all') }}>Everything</button>
-            <button className={view === 'talk' ? 'on' : ''} onClick={() => { setView('talk'); localStorage.setItem('ss.chatView', 'talk') }}>Conversation</button>
-          </span>
+          {target === 'channel' && <><span>·</span><span>{st?.channel.connected ? 'your Claude Code' : 'no Claude Code session yet'}</span></>}
+          {target === 'copilot' && st?.copilot.mode !== 'stub' && st?.copilot.cost_usd ? <><span>·</span><span>${st.copilot.cost_usd.toFixed(2)}</span></> : null}
         </div>
-        <div className="row" style={{ gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-          <Seg value={target} onChange={(v) => settings({ target: v })} options={[{ v: 'copilot', l: 'Built-in copilot' }, { v: 'channel', l: 'My Claude Code' }]} />
-          <label className="row mono muted" style={{ gap: 5, marginLeft: 'auto' }} title="Push new incidents and revised assessments to the agent as they happen">
-            watch stream <Toggle on={!!st?.watch.on} onChange={(v) => settings({ watch: { on: v } })} />
-            <select className="input sm cadence-sel" aria-label="How often the live column posts updates" title="How often the live column posts an activity update"
-              value={st?.narrate ? (st.narrate.on ? String(st.narrate.every_s) : 'off') : '60'}
-              onChange={(e) => settings({ narrate: e.target.value === 'off' ? { on: false } : { on: true, every_s: +e.target.value } })}>
-              <option value="0">updates every window</option><option value="60">updates every minute</option>
-              <option value="300">updates every 5 min</option><option value="off">no activity updates</option>
-            </select>
-            {snap?.org.llm_mode !== 'stub' && (
-              <select className="input sm cadence-sel" aria-label="How often the lead agent posts its own summary"
-                value={st?.commentary ? (st.commentary.on ? String(st.commentary.every_s) : 'off') : '300'}
-                onChange={(e) => settings({ commentary: e.target.value === 'off' ? { on: false } : { on: true, every_s: +e.target.value } })}>
-                <option value="300">summary every 5 min</option><option value="900">summary every 15 min</option><option value="off">no summaries</option>
-              </select>
-            )}
-          </label>
-        </div>
-        <div className="row mono muted" style={{ gap: 8, marginTop: 6, fontSize: 10.5 }}>
-          {target === 'copilot' ? (
-            <span>{st?.copilot.mode === 'stub' ? 'deterministic commands (no model)' : `${st?.copilot.model} · ${st?.copilot.turns} turns${st?.copilot.cost_usd ? ` · $${st.copilot.cost_usd.toFixed(3)}` : ''}`}</span>
-          ) : (
-            <span className="row" style={{ gap: 6 }}>
-              <span className={`live-dot ${st?.channel.connected ? '' : 'off'}`} style={{ width: 6, height: 6 }} />
-              {st?.channel.connected ? 'Claude Code session connected via channel' : 'no session connected'}
-              <button className="claim-ref" onClick={() => setShowSetup(!showSetup)}>{showSetup ? 'hide setup' : 'how to connect'}</button>
-            </span>
-          )}
-          <button className="claim-ref" style={{ marginLeft: 'auto' }} onClick={() => settings({ reset: true })}>new conversation</button>
-        </div>
-        {target === 'channel' && (showSetup || !st?.channel.connected) && (
+        {target === 'channel' && !st?.channel.connected && (
           <div className="card" style={{ marginTop: 8, fontSize: 12.5 }}>
-            Open a terminal in the SwarmFrame folder and start Claude Code with the SwarmFrame channel. It reads <span className="mono">.mcp.json</span> and connects back here.
+            Start Claude Code in the SwarmFrame folder with the SwarmFrame channel; it reads <span className="mono">.mcp.json</span> and connects back here.
             <div className="untrusted" style={{ marginTop: 6, color: 'var(--ink)' }}>{st?.channel.command}</div>
-            <div className="muted" style={{ marginTop: 4 }}>Your messages arrive in that session; its replies and permission prompts appear here.</div>
           </div>
         )}
       </div>
@@ -137,8 +120,8 @@ export function ChatDock({ docked = false }: { docked?: boolean }) {
       <div className="chat-body">
         {!visible.length && (
           <div style={{ padding: '18px 4px' }}>
-            <div className="italic" style={{ fontSize: 17, color: 'var(--ink-2)', marginBottom: 10 }}>
-              SwarmFrame narrates the stream here as it arrives, posts findings the moment they appear, and answers questions. Ask it what is going on, or tell it what to do.</div>
+            <div style={{ fontSize: 14, color: 'var(--ink-2)', marginBottom: 10, lineHeight: 1.5 }}>
+              A line about each stretch of activity appears here, every finding the moment it is raised, and answers to your questions.</div>
             <div className="stack" style={{ gap: 6 }}>
               {SUGGEST.map((s) => <button key={s} className="btn sm" style={{ justifyContent: 'flex-start', whiteSpace: 'normal', textAlign: 'left' }} onClick={() => send(s)}>{s}</button>)}
             </div>
@@ -218,7 +201,7 @@ function Msg({ m }: { m: ChatMsg }) {
           <div key={i} className="ev-item">
             <div className="label" style={{ color: 'var(--accent)' }}>{x.kind === 'REVISED' ? 'revised' : 'new finding'} · {fmtTime(x.ts)}{x.level && <span className={`ev-lv lv-${LV[x.level] ?? 'watch'}`}>{x.level.toLowerCase()}</span>}</div>
             <div className="ev-text">{x.explain?.what || x.text} <CiteMarks cites={x.cites} max={4} /></div>
-            {x.explain?.why && <div className="ev-why"><b>Why it may matter:</b> {x.explain.why} <span className="muted">Innocent reading: {x.explain.benign}</span></div>}
+            {x.explain?.why && <details className="ev-why"><summary>Why it may matter</summary>{x.explain.why} <span className="muted">Innocent reading: {x.explain.benign}</span></details>}
           </div>
         ))}
         {items.length > 3 && <div className="mono muted" style={{ fontSize: 11, marginTop: 6 }}>and {items.length - 3} more · see Attention</div>}

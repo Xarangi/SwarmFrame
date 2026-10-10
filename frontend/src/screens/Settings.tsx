@@ -6,6 +6,7 @@ import { Icon, Toggle } from '../components/ui'
 import { dashOps } from '../components/kit'
 import { Configure } from './Configure'
 import { Evaluate } from './Evaluate'
+import { Appearance } from '../components/Appearance'
 
 export async function lensAction(action: string, name: string, new_name = '') {
   try {
@@ -19,19 +20,20 @@ export async function lensAction(action: string, name: string, new_name = '') {
   }
 }
 
-type Tab = 'dashboard' | 'monitoring' | 'compare'
+type Tab = 'appearance' | 'dashboard' | 'monitoring' | 'compare'
 
 export function Settings({ s }: { s: Snapshot }) {
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const [tab, setTab] = useState<Tab>(() => (localStorage.getItem('ss.settingsTab') as Tab) || 'appearance')
   return (
     <div className="fade-in">
       <header className="page-head"><div><h1 className="page-title">Settings</h1>
         <p className="page-sub">{s.source.title} · {s.org.name}</p></div></header>
       <div className="studio-tabs flush">
-        {([['dashboard', 'Dashboard'], ['monitoring', 'Monitoring & models'], ['compare', 'Compare strategies']] as [Tab, string][]).map(([k, l]) =>
-          <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        {([['appearance', 'Look'], ['dashboard', 'Lenses and words'], ['monitoring', 'Monitoring and models'], ['compare', 'Compare strategies']] as [Tab, string][]).map(([k, l]) =>
+          <button key={k} className={tab === k ? 'on' : ''} onClick={() => { setTab(k); localStorage.setItem('ss.settingsTab', k) }}>{l}</button>)}
       </div>
       <div className="embedded" style={{ marginTop: 18 }}>
+        {tab === 'appearance' && <Appearance />}
         {tab === 'dashboard' && <DashboardSettings />}
         {tab === 'monitoring' && <Configure s={s} />}
         {tab === 'compare' && <Evaluate />}
@@ -42,15 +44,9 @@ export function Settings({ s }: { s: Snapshot }) {
 
 function DashboardSettings() {
   const dash = useStore((x) => x.dash)
-  const [theme, setTheme] = useState<string>(() => localStorage.getItem('ss.theme') || '')
   const [name, setName] = useState('')
   const [terms, setTerms] = useState<{ agent: string; resource: string }>({ agent: '', resource: '' })
   useEffect(() => { if (dash) setTerms({ agent: dash.spec.terminology.agent ?? '', resource: dash.spec.terminology.resource ?? '' }) }, [dash?.spec.version]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (theme) document.documentElement.dataset.theme = theme
-    else delete document.documentElement.dataset.theme
-    try { localStorage.setItem('ss.theme', theme) } catch { /* ignore */ }
-  }, [theme])
   if (!dash) return null
   return (
     <div className="settings-grid">
@@ -80,10 +76,6 @@ function DashboardSettings() {
             <Toggle on={dash.spec.machinery} onChange={(v) => dashOps([{ op: 'set_machinery', on: v }], v ? 'showed the machinery' : 'hid the machinery', v ? 'Added “The machinery” under Activity' : 'Removed “The machinery”')} />
             <span><b>Show the machinery</b><br /><span className="muted" style={{ fontSize: 12.5 }}>The reading plan, groups, coverage and analyst team as full panels on a page, for the level of detail an operator of SwarmFrame wants.</span></span>
           </label>
-          <div className="row" style={{ gap: 10 }}>
-            <span style={{ width: 70 }}>Theme</span>
-            <div className="seg">{[['', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([v, l]) => <button key={v} className={theme === v ? 'on' : ''} onClick={() => setTheme(v)}>{l}</button>)}</div>
-          </div>
         </div>
       </section>
     </div>

@@ -28,21 +28,33 @@ export function ViewBody({ page, panel, version }: { page: string; panel: PanelS
   const v = panel.view!
   if (v.primitive === 'note') return <Note text={String(v.options?.text ?? '')} />
   if (!data) return <div className="skeleton" style={{ height: v.primitive === 'stat' ? 54 : 150 }} />
-  return <ViewChart primitive={v.primitive} data={data} options={v.options} />
+  return <ViewChart primitive={v.primitive} data={data} options={{ ...v.options, link: (v as any).link }} />
 }
 
 /** Draw a view's result. Also used by the view builder's preview. */
 export function ViewChart({ primitive, data, options = {} }: { primitive: string; data: ViewData; options?: Record<string, any> }) {
   if (data.meta?.error) return <Empty title="This view could not run.">{data.meta.error}</Empty>
   if (!data.rows.length) return <Empty title="Nothing yet at this point in the stream.">The view fills in as the replay advances.</Empty>
+  const link = options?.link !== 'none'
   switch (primitive) {
     case 'stat': return <Stat data={data} unit={options?.unit} />
     case 'timeseries': return <TimeSeries data={data} />
-    case 'bar': return <Bars data={data} />
+    case 'bar': return <Bars data={data} link={link} />
     case 'heatmap': return <Heatmap data={data} />
-    default: return <Table data={data} />
+    case 'feed': return <Feed data={data} />
+    case 'graph': return <Graph data={data} link={link} />
+    case 'bipartite': return <Bipartite data={data} link={link} />
+    case 'swimlane': return <Swimlane data={data} link={link} />
+    default: return <Table data={data} link={link} />
   }
 }
+
+/** The entity behind a row's label, when the query grouped by actor or object: a click opens its evidence. */
+function rowEntity(data: ViewData, i: number, col = 0): string | null {
+  const ids = (data.meta as any)?.ids as (string | null)[][] | undefined
+  return ids?.[i]?.[col] ?? null
+}
+const openEntity = (id: string | null) => { if (id) useStore.getState().openDrawer({ kind: 'entity', id }) }
 
 function Note({ text }: { text: string }) {
   return (
@@ -73,15 +85,16 @@ function Stat({ data, unit }: { data: ViewData; unit?: string }) {
   )
 }
 
-function Bars({ data }: { data: ViewData }) {
+function Bars({ data, link = true }: { data: ViewData; link?: boolean }) {
   const max = Math.max(1, ...data.rows.map((r) => Number(r[r.length - 1])))
   return (
-    <div className="stack" style={{ gap: 7 }}>
+    <div className="stack" style={{ gap: 5 }}>
       {data.rows.slice(0, 15).map((r, i) => {
         const v = Number(r[r.length - 1])
         const lab = r.slice(0, -1).join(' · ')
+        const ent = link ? rowEntity(data, i) : null
         return (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 38%) 1fr 52px', gap: 10, alignItems: 'center' }}>
+          <div key={i} className={`bars-row ${ent ? 'link' : ''}`} onClick={ent ? () => openEntity(ent) : undefined} title={ent ? 'Open the records' : undefined}>
             <span title={lab} style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lab}</span>
             <div className="bar-track" style={{ height: 8 }}><div className="bar-fill" style={{ width: `${(v / max) * 100}%`, background: 'var(--data)' }} /></div>
             <span className="mono" style={{ textAlign: 'right' }}>{fmtNum(v)}</span>
@@ -195,17 +208,141 @@ function Heatmap({ data }: { data: ViewData }) {
   )
 }
 
-function Table({ data }: { data: ViewData }) {
+function Table({ data, link = true }: { data: ViewData; link?: boolean }) {
   return (
     <div style={{ maxHeight: 360, overflow: 'auto' }}>
-      <table className="tbl" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead><tr>{data.columns.map((c) => <th key={c} className="label" style={{ textAlign: 'left', padding: '4px 8px 6px 0', borderBottom: '1px solid var(--line)' }}>{c}</th>)}</tr></thead>
+      <table className="t" style={{ fontSize: 13 }}>
+        <thead><tr>{data.columns.map((c) => <th key={c}>{c}</th>)}</tr></thead>
         <tbody>
           {data.rows.slice(0, 60).map((r, i) => (
-            <tr key={i}>{r.map((v, j) => <td key={j} className={typeof v === 'number' ? 'mono' : ''} style={{ padding: '5px 8px 5px 0', borderBottom: '1px solid var(--line-2)', verticalAlign: 'top' }}>{typeof v === 'number' ? fmtNum(v) : String(v)}</td>)}</tr>
+            <tr key={i}>{r.map((v, j) => {
+              const ent = link ? rowEntity(data, i, j) : null
+              return <td key={j} className={typeof v === 'number' ? 'num' : ''}>{ent ? <button className="claim-ref" onClick={() => openEntity(ent)}>{String(v)}</button> : typeof v === 'number' ? fmtNum(v) : String(v)}</td>
+            })}</tr>
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+/** The latest matching records, newest first; each opens in the evidence drawer. */
+function Feed({ data }: { data: ViewData }) {
+  const eids = ((data.meta as any)?.event_ids ?? []) as string[]
+  return (
+    <div className="feed">
+      {data.rows.map((r, i) => (
+        <div key={i} className="feed-row" onClick={() => eids[i] && useStore.getState().openDrawer({ kind: 'event', id: eids[i] })} title="Open the record">
+          <span className="mono muted">{String(r[0]).slice(5, 16)}</span>
+          <span className="what"><b>{String(r[1] || 'someone')}</b> {String(r[2])}{r[3] ? <> on <b>{String(r[3])}</b></> : null}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Who works with whom: nodes of the first dimension, linked when they share values of the second. */
+function Graph({ data, link = true }: { data: ViewData; link?: boolean }) {
+  const [ref, { w }] = useSize<HTMLDivElement>()
+  const h = 300
+  const g = useMemo(() => {
+    const tot: Record<string, number> = {}, idOf: Record<string, string | null> = {}
+    const by: Record<string, Set<string>> = {}
+    data.rows.forEach((r, i) => {
+      const a = String(r[0]), b = String(r[1]), v = Number(r[2])
+      tot[a] = (tot[a] ?? 0) + v
+      idOf[a] = rowEntity(data, i, 0)
+      ;(by[b] ??= new Set()).add(a)
+    })
+    const nodes = Object.keys(tot).sort((x, y) => tot[y] - tot[x]).slice(0, 36)
+    const keep = new Set(nodes)
+    const ew: Record<string, number> = {}
+    Object.values(by).forEach((set) => {
+      const xs = [...set].filter((x) => keep.has(x))
+      for (let i = 0; i < xs.length; i++) for (let j = i + 1; j < xs.length; j++) { const k = xs[i] < xs[j] ? `${xs[i]}\u0000${xs[j]}` : `${xs[j]}\u0000${xs[i]}`; ew[k] = (ew[k] ?? 0) + 1 }
+    })
+    const edges = Object.entries(ew).sort((a, b) => b[1] - a[1]).slice(0, 120).map(([k, v]) => { const [a, b] = k.split('\u0000'); return { a, b, v } })
+    // a small deterministic force layout: pull along edges, push apart, keep inside
+    const pos: Record<string, { x: number; y: number }> = {}
+    nodes.forEach((n, i) => { const t = (i / Math.max(1, nodes.length)) * Math.PI * 2; pos[n] = { x: Math.cos(t) * 0.3, y: Math.sin(t) * 0.3 } })
+    for (let it = 0; it < 220; it++) {
+      const f: Record<string, { x: number; y: number }> = Object.fromEntries(nodes.map((n) => [n, { x: -pos[n].x * 0.05, y: -pos[n].y * 0.05 }]))
+      for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+        const p = pos[nodes[i]], q = pos[nodes[j]]; const dx = p.x - q.x, dy = p.y - q.y; const d2 = Math.max(0.002, dx * dx + dy * dy)
+        const k = 0.0016 / d2; f[nodes[i]].x += dx * k; f[nodes[i]].y += dy * k; f[nodes[j]].x -= dx * k; f[nodes[j]].y -= dy * k
+      }
+      const emax = Math.max(1, ...edges.map((e) => e.v))
+      edges.forEach((e) => { const p = pos[e.a], q = pos[e.b]; const dx = q.x - p.x, dy = q.y - p.y; const k = 0.04 * (e.v / emax); f[e.a].x += dx * k; f[e.a].y += dy * k; f[e.b].x -= dx * k; f[e.b].y -= dy * k })
+      nodes.forEach((n) => { pos[n].x = Math.max(-0.44, Math.min(0.44, pos[n].x + f[n].x)); pos[n].y = Math.max(-0.42, Math.min(0.42, pos[n].y + f[n].y)) })
+    }
+    return { nodes, edges, tot, pos, idOf, max: Math.max(1, ...Object.values(tot)), emax: Math.max(1, ...edges.map((e) => e.v)) }
+  }, [data])
+  const X = (x: number) => w / 2 + x * (w - 40), Y = (y: number) => h / 2 + y * (h - 30)
+  return (
+    <div ref={ref}>
+      <svg width={w} height={h}>
+        {g.edges.map((e, i) => <line key={i} x1={X(g.pos[e.a].x)} y1={Y(g.pos[e.a].y)} x2={X(g.pos[e.b].x)} y2={Y(g.pos[e.b].y)} stroke="var(--ink-3)" strokeOpacity={0.12 + 0.5 * (e.v / g.emax)} strokeWidth={0.6 + 2 * (e.v / g.emax)} />)}
+        {g.nodes.map((n, i) => {
+          const r = 3.5 + 9 * Math.sqrt(g.tot[n] / g.max)
+          return (
+            <g key={n} className="graph-node" transform={`translate(${X(g.pos[n].x)}, ${Y(g.pos[n].y)})`} onClick={link ? () => openEntity(g.idOf[n]) : undefined}>
+              <circle r={r} fill={i < 8 ? 'var(--data)' : 'var(--ink-4)'} fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.2}><title>{`${n}: ${fmtNum(g.tot[n])}`}</title></circle>
+              {i < 12 && <text x={X(g.pos[n].x) > w - 110 ? -(r + 3) : r + 3} y={3.5} textAnchor={X(g.pos[n].x) > w - 110 ? 'end' : 'start'} fontSize={10.5} fill="var(--ink-2)">{n.length > 18 ? n.slice(0, 17) + '…' : n}</text>}
+            </g>
+          )
+        })}
+      </svg>
+      <div className="muted" style={{ fontSize: 11.5 }}>Linked when they share a {data.columns[1]}; thicker lines share more. Click a node to open its records.</div>
+    </div>
+  )
+}
+
+/** Two columns joined by lines weighted by count. */
+function Bipartite({ data, link = true }: { data: ViewData; link?: boolean }) {
+  const [ref, { w }] = useSize<HTMLDivElement>()
+  const g = useMemo(() => {
+    const ta: Record<string, number> = {}, tb: Record<string, number> = {}, ida: Record<string, string | null> = {}, idb: Record<string, string | null> = {}
+    data.rows.forEach((r, i) => { const a = String(r[0]), b = String(r[1]), v = Number(r[2]); ta[a] = (ta[a] ?? 0) + v; tb[b] = (tb[b] ?? 0) + v; ida[a] = rowEntity(data, i, 0); idb[b] = rowEntity(data, i, 1) })
+    const A = Object.keys(ta).sort((x, y) => ta[y] - ta[x]).slice(0, 14), B = Object.keys(tb).sort((x, y) => tb[y] - tb[x]).slice(0, 14)
+    const links = data.rows.filter((r) => A.includes(String(r[0])) && B.includes(String(r[1]))).map((r) => ({ a: String(r[0]), b: String(r[1]), v: Number(r[2]) }))
+    return { A, B, links, ida, idb, max: Math.max(1, ...links.map((l) => l.v)) }
+  }, [data])
+  const rowH = 20, h = Math.max(g.A.length, g.B.length) * rowH + 10, labW = Math.min(170, w * 0.3)
+  const ya = (a: string) => 10 + g.A.indexOf(a) * rowH, yb = (b: string) => 10 + g.B.indexOf(b) * rowH
+  return (
+    <div ref={ref}>
+      <svg width={w} height={h}>
+        {g.links.map((l, i) => { const x1 = labW + 6, x2 = w - labW - 6, y1 = ya(l.a), y2 = yb(l.b)
+          return <path key={i} d={`M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`} fill="none" stroke="var(--data)" strokeOpacity={0.15 + 0.6 * (l.v / g.max)} strokeWidth={0.8 + 3 * (l.v / g.max)}><title>{`${l.a} → ${l.b}: ${l.v}`}</title></path> })}
+        {g.A.map((a) => <text key={a} className="lane-label" x={labW} y={ya(a) + 4} textAnchor="end" onClick={link ? () => openEntity(g.ida[a]) : undefined}>{a.length > 24 ? a.slice(0, 23) + '…' : a}</text>)}
+        {g.B.map((b) => <text key={b} className="lane-label" x={w - labW} y={yb(b) + 4} onClick={link ? () => openEntity(g.idb[b]) : undefined}>{b.length > 24 ? b.slice(0, 23) + '…' : b}</text>)}
+      </svg>
+    </div>
+  )
+}
+
+/** One lane per value of the first dimension; marks over time sized by count. */
+function Swimlane({ data, link = true }: { data: ViewData; link?: boolean }) {
+  const [ref, { w }] = useSize<HTMLDivElement>()
+  const g = useMemo(() => {
+    const ti = ((data.meta as any)?.time_dims?.[0] ?? 1) as number, li = 1 - ti
+    const tot: Record<string, number> = {}, ids: Record<string, string | null> = {}
+    data.rows.forEach((r, i) => { const k = String(r[li]); tot[k] = (tot[k] ?? 0) + Number(r[2]); ids[k] = rowEntity(data, i, li) })
+    const lanes = Object.keys(tot).sort((a, b) => tot[b] - tot[a]).slice(0, 16)
+    const times = [...new Set(data.rows.map((r) => String(r[ti])))].sort()
+    const pts = data.rows.filter((r) => lanes.includes(String(r[li]))).map((r) => ({ lane: String(r[li]), t: String(r[ti]), v: Number(r[2]) }))
+    return { lanes, times, pts, ids, max: Math.max(1, ...pts.map((p) => p.v)) }
+  }, [data])
+  const labW = Math.min(170, w * 0.3), rowH = 20, h = g.lanes.length * rowH + 24
+  const x = (t: string) => labW + 8 + (g.times.indexOf(t) / Math.max(1, g.times.length - 1)) * (w - labW - 20)
+  return (
+    <div ref={ref}>
+      <svg width={w} height={h}>
+        {g.lanes.map((l, i) => <g key={l}><line x1={labW + 4} x2={w - 6} y1={i * rowH + 12} y2={i * rowH + 12} stroke="var(--line-2)" />
+          <text className="lane-label" x={labW} y={i * rowH + 16} textAnchor="end" onClick={link ? () => openEntity(g.ids[l]) : undefined}>{l.length > 24 ? l.slice(0, 23) + '…' : l}</text></g>)}
+        {g.pts.map((p, i) => <circle key={i} cx={x(p.t)} cy={g.lanes.indexOf(p.lane) * rowH + 12} r={1.5 + 6 * Math.sqrt(p.v / g.max)} fill="var(--data)" fillOpacity={0.75}><title>{`${p.lane} · ${p.t}: ${p.v}`}</title></circle>)}
+        {g.times.length > 1 && [0, g.times.length - 1].map((j) => <text key={j} x={x(g.times[j])} y={h - 4} textAnchor={j ? 'end' : 'start'} className="mono" fontSize={10} fill="var(--ink-3)">{g.times[j].slice(0, 16)}</text>)}
+      </svg>
     </div>
   )
 }

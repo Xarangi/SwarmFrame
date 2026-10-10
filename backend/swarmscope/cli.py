@@ -7,6 +7,7 @@
   eval        compare organizations           swarmscope eval --orgs default baseline_deterministic
   scale-eval  planted swarm at scale          swarmscope scale-eval --agents 2000 --hours 36
   run-swarm   real Claude Code agents         swarmscope run-swarm runner/scenarios/tiny.yaml
+  analyze     a dump in, a report out         swarmscope analyze path/to/logs --out report.md [--write claude]
 """
 from __future__ import annotations
 
@@ -67,6 +68,17 @@ def main(argv: list[str] | None = None) -> None:
     w.add_argument("scenario")
     w.add_argument("--server", default="http://127.0.0.1:8765")
 
+    an = sub.add_parser("analyze", help="post-analysis: read a folder or file of logs and write a report")
+    an.add_argument("path")
+    an.add_argument("--out", default=None, help="where to write the Markdown report (default: print a summary)")
+    an.add_argument("--source", default=None, help="read it as a known source (german_wiki, transluce, ai_village)")
+    an.add_argument("--write", choices=["rules", "claude"], default="rules", help="who writes the report")
+    an.add_argument("--model", default="claude-sonnet-5-5")
+    an.add_argument("--effort", default="low")
+    an.add_argument("--words", default=None, help="target length for Claude, e.g. 2500-3000")
+    an.add_argument("--title", default="")
+    an.add_argument("--detect", action="store_true", help="only show what is in the dump (structure only)")
+
     a = ap.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -86,6 +98,32 @@ def main(argv: list[str] | None = None) -> None:
         print(f"SwarmFrame on http://{a.host}:{a.port}  "
               + (f"(source={a.source}, org={a.org}, llm={a.llm or 'org default'})" if a.source else "(compose mode)"))
         uvicorn.run("swarmscope.api.app:app", host=a.host, port=a.port, log_level="warning")
+
+    elif a.cmd == "analyze":
+        from swarmscope.analysis import jobs
+        from swarmscope.analysis.dump import detect
+        if a.detect:
+            print(json.dumps(detect(a.path), indent=2, default=str))
+            return
+        opts = {"write": a.write, "model": a.model, "effort": a.effort, "title": a.title}
+        if a.source:
+            opts["source"] = a.source
+        if a.words:
+            lo, hi = a.words.split("-")
+            opts["words"] = [int(lo), int(hi)]
+        job = asyncio.run(jobs.run_blocking(a.path, opts))
+        if job.status != "done":
+            print(f"analysis failed: {job.error}\n{job.message}")
+            sys.exit(1)
+        from swarmscope.analysis.report import summary_counts, word_count
+        md = job.written or job.markdown
+        if a.out:
+            Path(a.out).write_text(md, encoding="utf-8")
+            if job.written:
+                Path(a.out).with_suffix(".rules.md").write_text(job.markdown, encoding="utf-8")
+        print(json.dumps({"source": job.source, "seconds": round(job.finished - job.started, 1), "words": word_count(md),
+                          **summary_counts(job.report), "out": a.out,
+                          "writer": {k: v for k, v in (job.writer or {}).items() if k != "open_questions"} or None}, indent=2, default=str))
 
     elif a.cmd == "probe":
         from swarmscope.ingest.probe import probe

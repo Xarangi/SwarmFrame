@@ -4,7 +4,7 @@ import { Route, useStore } from './store'
 import type { Snapshot } from './types'
 import { fmtDay, fmtTime, Icon, Logo } from './components/ui'
 import { estimate, fmtRate } from './components/speed'
-import { dashOps, Menu, Tip, ToastHost, useTerms } from './components/kit'
+import { dashOps, Menu, Tip, ToastHost } from './components/kit'
 import { EvidenceDrawer } from './components/EvidenceDrawer'
 import { ChatDock } from './components/ChatDock'
 import { Brief } from './screens/Brief'
@@ -17,24 +17,25 @@ import { Organization } from './screens/Organization'
 import { MonitorAttention } from './screens/MonitorAttention'
 import { CustomPage, DesignStudio } from './screens/Views'
 import { Compose } from './screens/Compose'
+import { Analyze } from './screens/Analyze'
 const World = React.lazy(() => import('./screens/World').then((m) => ({ default: m.World })))
 
 export default function App() {
   const { snap, connected, route, setRoute, connect, dash, designing, composed } = useStore()
-  const terms = useTerms()
   const chatOpen = useStore((x) => x.chatOpen)
-  // wide screens keep SwarmFrame's live column docked beside the page; narrow ones slide it over
+  // wide screens keep the live column docked beside the page; narrow ones slide it over
   const [wide, setWide] = useState(() => window.innerWidth >= 1280)
   useEffect(() => { const on = () => setWide(window.innerWidth >= 1280); window.addEventListener('resize', on); return () => window.removeEventListener('resize', on) }, [])
   const loading = !snap
-  const composing = !loading && (!!snap!.empty || route === 'compose' || (!!snap!.session_id && composed !== snap!.session_id))
+  const analyzing = route === 'analyze'
+  const composing = !loading && !analyzing && (!!snap!.empty || route === 'compose' || (!!snap!.session_id && composed !== snap!.session_id))
   useEffect(() => { connect() }, [connect])
   const unacked = snap?.brief?.cases?.unacknowledged ?? 0
   const overdue = snap?.brief?.cases?.overdue ?? 0
   useEffect(() => {
-    const base = snap?.source?.title ? `${snap.source.title} · SwarmFrame` : 'SwarmFrame'
+    const base = snap?.source?.title && !snap.empty ? `${snap.source.title} · SwarmFrame` : 'SwarmFrame'
     document.title = unacked ? `(${unacked}) ${base}` : base
-  }, [unacked, snap?.source?.title])
+  }, [unacked, snap?.source?.title, snap?.empty])
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || document.querySelector('.menu')) return        // an open menu closes first
@@ -44,23 +45,18 @@ export default function App() {
     window.addEventListener('keydown', esc)
     return () => window.removeEventListener('keydown', esc)
   }, [])
-  useEffect(() => {
-    const t = localStorage.getItem('ss.theme')
-    if (t) document.documentElement.dataset.theme = t
-  }, [])
-  const live = snap && !snap.empty && !composing
+  const live = snap && !snap.empty && !composing && !analyzing
   const pages = dash?.spec.pages ?? []
-  const activity = pages.filter((p) => p.nav === 'activity')
-  const top = pages.filter((p) => p.nav === 'top')
+  const own = pages.filter((p) => p.nav === 'activity' || p.nav === 'top')
   const b = snap?.brief
   const need = b ? b.counts.ACT + b.counts.LOOK : 0
   const running = snap && !snap.empty ? snap.investigations.filter((i) => i.status === 'running' || i.status === 'open').length : 0
-  const [actOpen, setActOpen] = useState(true)
 
-  const Item = ({ id, icon, label, count, hot }: { id: Route; icon: string; label: string; count?: number; hot?: boolean }) => (
-    <button className={`nav-item ${route === id && !composing ? 'active' : ''}`} onClick={() => setRoute(id)}>
-      <Icon name={icon} />{label}
+  const Item = ({ id, icon, label, count, hot, cls = '' }: { id: Route; icon: string; label: string; count?: number; hot?: boolean; cls?: string }) => (
+    <button className={`nav-item ${cls} ${route === id && !composing ? 'active' : ''}`} onClick={() => setRoute(id)} title={label}>
+      <Icon name={icon} /><span className="nav-text">{label}</span>
       {!!count && <span className={`count ${hot ? 'hot' : ''}`}>{count}</span>}
+      {!!count && hot && <span className="nav-dot" />}
     </button>
   )
   const addPage = async () => {
@@ -73,54 +69,37 @@ export default function App() {
   return (
     <div className={`shell ${live && wide ? (chatOpen ? 'docked' : 'docked-min') : ''}`}>
       <nav className="nav">
-        <div className="wordmark"><Logo /><span className="name">Swarm<em>Frame</em></span></div>
+        <div className="wordmark" title={connected ? 'Connected' : 'Reconnecting…'}>
+          <Logo /><span className="name">Swarm<em>Frame</em></span><span className={`conn-dot ${connected ? '' : 'off'}`} />
+        </div>
         {live && (
           <>
             <Item id="brief" icon="home" label="Brief" />
-            <Item id="attention" icon="flag" label="Attention" count={need} hot={overdue > 0} />
+            <Item id="attention" icon="flag" label="Findings" count={need} hot={overdue > 0 || need > 0} />
             <Item id="world" icon="globe" label="World" />
-            <button className="nav-item nav-group" onClick={() => setActOpen(!actOpen)} aria-expanded={actOpen}>
-              <Icon name="activity" />Activity
-              <span className={`chev-sm ${actOpen ? 'open' : ''}`}><Icon name="chevron" size={13} /></span>
-            </button>
-            {actOpen && (
-              <div className="nav-sub">
-                {activity.map((p) => (
-                  <button key={p.id} className={`nav-item sub ${route === `page:${p.id}` ? 'active' : ''}`} onClick={() => setRoute(`page:${p.id}`)} aria-label={p.title}>
-                    <span className="nav-text">{p.title}</span>
-                  </button>
-                ))}
-                <button className="nav-item sub add" onClick={addPage}><Icon name="plus" size={13} />Add a page</button>
-              </div>
-            )}
-            {top.map((p) => (
-              <button key={p.id} className={`nav-item ${route === `page:${p.id}` ? 'active' : ''}`} onClick={() => setRoute(`page:${p.id}`)} title={p.description}>
-                <Icon name="layers" /><span className="nav-text">{p.title}</span>
-              </button>
-            ))}
             <Item id="investigations" icon="investigations" label="Investigations" count={running} />
             {snap?.control && <Item id="control" icon="control" label="Control" count={snap.control.pending.length} hot />}
-            <Item id="hood" icon="hood" label="Under the hood" />
-            {designing && <div className="nav-note"><span className="live-dot run" />composing…</div>}
+            <div className="nav-head"><span>Pages</span><button onClick={addPage} title="Add a page" aria-label="Add a page"><Icon name="plus" size={13} /></button></div>
+            {own.map((p) => (
+              <button key={p.id} className={`nav-item sub ${route === `page:${p.id}` ? 'active' : ''}`} onClick={() => setRoute(`page:${p.id}`)} title={p.title}>
+                <Icon name="layers" size={16} /><span className="nav-text">{p.title}</span>
+              </button>
+            ))}
+            {designing && <div className="nav-note"><span className="live-dot run" /><span>composing…</span></div>}
           </>
         )}
         <div className="nav-foot">
-          {!loading && <button className={`nav-item ${composing ? 'active' : ''}`} onClick={() => setRoute('compose')}><Icon name="plus" />New source</button>}
+          {live && <Item id="hood" icon="hood" label="Under the hood" />}
           {live && <Item id="settings" icon="configure" label="Settings" />}
-          {live && snap && (
-            <div className="rail-readout">
-              <span className="label">{snap.brief?.catalog ? 'in the record' : 'watching'}</span>
-              <span className="rr-v">{(snap.brief?.catalog ? snap.brief.glance.total?.value ?? 0 : snap.population.active).toLocaleString()}<small> {terms.agent}s</small></span>
-              <span className="rr-sub">{snap.source.title}</span>
-            </div>
-          )}
-          <div className="row mono muted conn"><span className={`live-dot ${connected ? '' : 'off'}`} />{connected ? 'connected' : 'reconnecting…'}</div>
+          {!loading && <button className={`nav-item new ${composing ? 'active' : ''}`} onClick={() => setRoute('compose')} title="Watch something new"><Icon name="plus" /><span className="nav-text">New source</span></button>}
+          {!loading && <button className={`nav-item new ${analyzing ? 'active' : ''}`} onClick={() => setRoute('analyze')} title="Analyze a dump"><Icon name="file" /><span className="nav-text">Analyze a dump</span></button>}
         </div>
       </nav>
       <div className="main">
         {live && <TopBar s={snap!} />}
-        <main className="content">
+        <main className={`content ${composing || analyzing ? 'compose-page' : ''}`}>
           {loading ? <div className="loading"><Logo size={34} /><span className="mono muted">connecting…</span></div>
+            : analyzing ? <Analyze />
             : composing ? <Compose /> : snap && (
             <>
               {route === 'brief' && <Brief s={snap} />}
@@ -162,6 +141,7 @@ function fmtScale(x: number): string {
 function TopBar({ s }: { s: Snapshot }) {
   const dash = useStore((x) => x.dash)
   const c = s.clock
+  const lens = dash && dash.lenses.length > 1 ? dash.lens : null
   const scale = (c as any).time_scale ?? c.window_s * c.speed
   const catching = (c as any).catching_up as { to: string; progress: number } | null
   const years = c.end && c.start ? (+new Date(c.end) - +new Date(c.start)) > 300 * 86400e3 : false
@@ -170,6 +150,7 @@ function TopBar({ s }: { s: Snapshot }) {
     <header className="topbar">
       <div className="tb-source">
         <span className="tb-title">{dash?.spec.title || s.source.title}</span>
+        {lens && <button className="chip soft" style={{ color: 'var(--ink-3)', cursor: 'pointer' }} title="Switch lens in Settings" onClick={() => useStore.getState().setRoute('settings')}>{lens}</button>}
         {s.source.synthetic && <span className="chip soft" style={{ color: 'var(--st-self)' }}>synthetic</span>}
         {s.source.live && <span className="chip soft" style={{ color: 'var(--st-observed)' }}><span className="dot" />live</span>}
         {s.live_replay && (() => {
@@ -187,14 +168,6 @@ function TopBar({ s }: { s: Snapshot }) {
           <span className={`chip soft mode-chip ${s.org.llm_mode === 'stub' ? '' : 'on'}`}><span className="dot" />{s.org.llm_label?.short ?? (s.org.llm_mode === 'stub' ? 'rules only' : 'Claude')}</span>
         </Tip>
       </div>
-      {dash && (
-        <Menu label={<span><span className="muted">Lens</span> {dash.lens}</span>} icon="lens" align="left" variant="ghost" items={[
-          ...dash.lenses.map((l) => ({ label: l, icon: l === dash.lens ? 'check' : undefined, onClick: () => l !== dash.lens && lensAction('switch', l) })),
-          { sep: true, label: '' },
-          { label: 'Save the current layout as…', icon: 'plus', hint: 'a lens is a named dashboard for one scenario', onClick: () => useStore.setState({ lensDialog: true, drawer: null, studioOpen: false }) },
-          { label: 'Manage lenses', icon: 'configure', onClick: () => useStore.getState().setRoute('settings') },
-        ]} />
-      )}
       <div className="tb-clock">
         {!c.live ? (
           <>

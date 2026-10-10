@@ -5,6 +5,21 @@ swarm; policy researcher on Transluce; ML engineer linking a JSON stream). All t
 front door works, the dashboard behind it is a wall. This document diagnoses why, sets the design principles we will
 hold to, lays out the new information architecture, and ends with the implementation plan.
 
+## Update (2026-10-10): one design system, a constrained designer, fewer controls
+
+- **Tokens all the way down.** `frontend/src/styles.css` was rewritten as one system that reads every colour,
+  typeface, size, radius and spacing from tokens. The tokens come from a checked theme
+  (`backend/swarmscope/dashboard/theme.py`, applied by `frontend/src/theme.ts`): five presets and every setting
+  changeable in Settings → Look, with readability checked in light and dark and the meaning colours fixed.
+- **The designer composes, it never codes.** Layout through the checked ops and a fixed view library (now with
+  feed, graph, bipartite and swimlane, each declaring what it needs and linking to its evidence), the look through
+  `theme_set`. Without a model the free designer reads plain requests.
+- **Fewer controls in view.** The rail lists the question pages and this source's pages, with the machinery,
+  settings and the two ways in (a new source, a dump) at the foot. The start screen is one list of sources and one
+  "How it runs" line; the choices open behind Change. The top bar lost the lens menu (Settings has it, and a chip
+  shows a non-default lens). The live column keeps one header line and a ⋯ menu; finding reasons fold.
+- **A side mode for dumps.** Analyze a dump (`frontend/src/screens/Analyze.tsx`, `backend/swarmscope/analysis/`).
+
 ## Status (2026-10-03): implemented
 
 | Plan | Where |

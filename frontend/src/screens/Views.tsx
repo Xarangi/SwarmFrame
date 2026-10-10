@@ -6,6 +6,7 @@ import { Empty, fmtNum, Icon } from '../components/ui'
 import { dashOps, Menu, MenuItem, undoLast } from '../components/kit'
 import { PANELS, useCapabilities } from '../panels/panels'
 import { ViewBody, ViewChart } from '../primitives/views'
+import { Designer } from '../components/Appearance'
 
 export { dashOps }
 
@@ -82,7 +83,8 @@ export function PageEditMenu({ page, edit, setEdit, onRename, extra = [] }: {
   const items: MenuItem[] = [
     { label: 'Add a panel', icon: 'plus', hint: 'any built-in, or a view from another page', onClick: () => studio(true, 'add', page.id) },
     { label: 'Build a view', icon: 'evaluate', hint: 'pick a chart and a field', onClick: () => studio(true, 'build', page.id) },
-    { label: 'Ask Claude', icon: 'spark', hint: llm === 'stub' ? 'free composer; models are off' : 'describe what you want', onClick: () => studio(true, 'ask', page.id) },
+    { label: 'Ask the designer', icon: 'spark', hint: llm === 'stub' ? 'plain requests, no model' : 'describe what you want', onClick: () => studio(true, 'ask', page.id) },
+    { label: 'Change the look', icon: 'palette', hint: 'colours, typefaces, density', onClick: () => { localStorage.setItem('ss.settingsTab', 'appearance'); useStore.getState().setRoute('settings') } },
     { sep: true, label: '' },
     { label: edit ? 'Done arranging' : 'Arrange panels', icon: 'grip', hint: 'resize, reorder, remove', onClick: () => setEdit(!edit) },
     ...extra,
@@ -174,7 +176,7 @@ interface Profile {
 }
 
 const TABS: { id: StudioTab; label: string }[] = [
-  { id: 'add', label: 'Add a panel' }, { id: 'build', label: 'Build a view' }, { id: 'ask', label: 'Ask Claude' }, { id: 'history', label: 'History' },
+  { id: 'add', label: 'Add a panel' }, { id: 'build', label: 'Build a view' }, { id: 'ask', label: 'Ask the designer' }, { id: 'history', label: 'History' },
 ]
 
 export function DesignStudio({ s }: { s: Snapshot }) {
@@ -291,36 +293,21 @@ function Catalog({ s, dash, page }: { s: Snapshot; dash: DashState; page: PageSp
 }
 
 /* ------------------------------------------------------------------ ask Claude */
-function AskClaude({ s, dash, page, prof }: { s: Snapshot; dash: DashState; page: PageSpec; prof: Profile | null }) {
+function AskClaude({ s, page, prof }: { s: Snapshot; dash: DashState; page: PageSpec; prof: Profile | null }) {
   const designing = useStore((x) => x.designing)
-  const [instr, setInstr] = useState('')
-  const [err, setErr] = useState('')
   const stub = s.org.llm_mode === 'stub'
-  const design = async () => {
-    setErr('')
-    const scoped = instr ? `On ${page.id === 'brief' ? 'the Brief (page brief)' : `the page "${page.id}"`}: ${instr}` : ''
-    try {
-      await post('/api/dashboard/design', { instruction: scoped })
-      if (!stub) useStore.getState().setChatOpen(true)
-      else useStore.getState().showToast('Composed with the free composer', true)
-    } catch (e: any) { setErr(String(e.message || e)) }
-  }
   return (
     <div className="ask-grid">
       <div className="stack">
-        <textarea className="input" rows={4} value={instr} onChange={(e) => setInstr(e.target.value)}
-          placeholder={page.id === 'brief' ? 'e.g. put the crowded-resources chart first and drop the timeline' : 'e.g. add a view of significant reports per target over time'} />
-        <div className="row" style={{ flexWrap: 'wrap' }}>
-          <button className="btn accent" disabled={designing} onClick={design}>
-            <Icon name="spark" size={15} />{designing ? 'Composing…' : stub ? 'Recompose (free)' : 'Ask Claude'}
-          </button>
-          <span className="muted" style={{ fontSize: 12.5 }}>
-            {stub ? 'Models are off, so the free composer fills gaps from the stream profile; it does not read your words. Turn models on in Settings to have Claude do it.'
-              : `One Claude session (${s.org.llm_mode} mode) edits the dashboard with the same tools you have; progress appears in the chat.`}
-          </span>
+        <Designer scope="all" compact />
+        <div className="card soft-card">
+          The designer composes from a fixed library (numbers, trends, rankings, grids, tables, feeds, networks, two-sided
+          maps, swimlanes, notes and the built-in panels) and a fixed set of look settings. It never writes code, every
+          view is checked against the data before it is added, and every change can be undone from History.
+          {stub && ' Without a model it understands plain look and layout requests; turn Claude on for new views.'}
         </div>
-        {err && <div className="mono" style={{ color: 'var(--st-contradicted)' }}>{err}</div>}
-        <div className="card soft-card">You can also ask in the chat at the bottom right, or from your own Claude Code session over the channel: “make me a lens for reviewing team-07”.</div>
+        <div className="row"><button className="btn" disabled={designing} onClick={() => post('/api/dashboard/design', { instruction: '', force: true }).then(() => useStore.getState().showToast(stub ? 'Recomposed with the free composer' : 'Recomposing; progress in the live column'))}>
+          <Icon name="spark" size={14} />{designing ? 'Composing…' : `Recompose ${page.id === 'brief' ? 'the dashboard' : 'around this stream'}`}</button></div>
       </div>
       <ProfileView prof={prof} compact />
     </div>
@@ -391,7 +378,7 @@ function History({ dash }: { dash: DashState }) {
 }
 
 /* ------------------------------------------------------------------ build a view by hand, with a real preview */
-const PRIM_LABEL: Record<string, string> = { stat: 'A number', timeseries: 'Over time', bar: 'Ranking', heatmap: 'Grid (two fields)', table: 'Table' }
+const PRIM_LABEL: Record<string, string> = { stat: 'A number', timeseries: 'Over time', bar: 'Ranking', heatmap: 'Grid (two fields)', table: 'Table', feed: 'Latest records', graph: 'Who works with whom', bipartite: 'Two-sided map', swimlane: 'Lanes over time' }
 const FIELD_LABEL: Record<string, string> = { actor: 'who (agent)', object: 'where (resource)', family: 'workstream', action: 'action', group: 'team / group' }
 const fieldName = (d: string) => FIELD_LABEL[d] ?? (d.startsWith('attr.') ? d.slice(5).replace('_', ' ') : d.startsWith('ts:') ? `time (${d.slice(3)})` : d)
 
@@ -417,13 +404,16 @@ function ViewBuilder({ dash, prof, page }: { dash: DashState; prof: Profile; pag
     if (prim === 'stat') return { time, ...m }
     if (prim === 'timeseries') return { group_by: [bucket, dim], time, ...m }
     if (prim === 'heatmap') return { group_by: [dim, dim2], time, top: 20, ...m }
+    if (prim === 'feed') return { time, top: 25 }
+    if (prim === 'graph' || prim === 'bipartite') return { group_by: [dim, dim2.startsWith('ts:') ? (dim === 'object' ? 'actor' : 'object') : dim2], time, top: 40, ...m }
+    if (prim === 'swimlane') return { group_by: [dim, bucket], time, top: 16, ...m }
     return { group_by: [dim], time, top: 15, ...m }
   }
   const view = () => ({ primitive: prim, query: query(), options: {} })
   const plural = (d: string) => ({ actor: `${prof.source.entity_noun}s`, object: `${prof.source.resource_noun}s`, family: 'workstreams', group: 'teams', action: 'actions' } as Record<string, string>)[d]
     ?? (d.startsWith('ts:') ? d.slice(3) + 's' : fieldName(d))
   const what = metric === 'count' ? 'Events' : metric === 'distinct:actor' ? `${prof.source.entity_noun}s` : `${prof.source.resource_noun}s`
-  const autoTitle = () => title || (prim === 'stat' ? what : prim === 'timeseries' ? `${what} by ${fieldName(dim)}` : prim === 'heatmap' ? `${plural(dim)} by ${plural(dim2)}` : `Busiest ${plural(dim)}`).replace(/^./, (c) => c.toUpperCase())
+  const autoTitle = () => title || (prim === 'stat' ? what : prim === 'feed' ? 'Latest records' : prim === 'graph' ? `${plural(dim)} that share ${plural(dim2.startsWith('ts:') ? 'object' : dim2)}` : prim === 'swimlane' ? `${plural(dim)} over time` : prim === 'timeseries' ? `${what} by ${fieldName(dim)}` : prim === 'heatmap' || prim === 'bipartite' ? `${plural(dim)} by ${plural(dim2)}` : `Busiest ${plural(dim)}`).replace(/^./, (c) => c.toUpperCase())
   useEffect(() => {
     let live = true
     const t = setTimeout(() => post('/api/dashboard/preview', { view: view() }).then((d) => { if (live) setPreview(d) }).catch(() => {}), 150)
@@ -436,11 +426,11 @@ function ViewBuilder({ dash, prof, page }: { dash: DashState; prof: Profile; pag
           <div className="label" style={{ marginBottom: 6 }}>Show it as</div>
           <div className="seg wrap">{Object.keys(PRIM_LABEL).filter((p) => dash.primitives[p]).map((p) => <button key={p} className={prim === p ? 'on' : ''} onClick={() => setPrim(p)}>{PRIM_LABEL[p]}</button>)}</div>
         </div>
-        {prim !== 'stat' && (
+        {prim !== 'stat' && prim !== 'feed' && (
           <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
-            <label className="field"><span className="label">{prim === 'timeseries' ? 'Split by' : prim === 'heatmap' ? 'Rows' : 'Rank'}</span>
+            <label className="field"><span className="label">{prim === 'timeseries' ? 'Split by' : prim === 'heatmap' ? 'Rows' : prim === 'graph' ? 'Nodes' : prim === 'bipartite' ? 'Left side' : prim === 'swimlane' ? 'One lane per' : 'Rank'}</span>
               <select className="input" value={dim} onChange={(e) => setDim(e.target.value)}>{dims.map((d) => <option key={d} value={d}>{fieldName(d)}</option>)}</select></label>
-            {prim === 'heatmap' && <label className="field"><span className="label">Columns</span>
+            {(prim === 'heatmap' || prim === 'graph' || prim === 'bipartite') && <label className="field"><span className="label">{prim === 'graph' ? 'Linked through' : prim === 'bipartite' ? 'Right side' : 'Columns'}</span>
               <select className="input" value={dim2} onChange={(e) => setDim2(e.target.value)}>{[bucket, ...dims].map((d) => <option key={d} value={d}>{fieldName(d)}</option>)}</select></label>}
           </div>
         )}
@@ -459,7 +449,7 @@ function ViewBuilder({ dash, prof, page }: { dash: DashState; prof: Profile; pag
         <label className="field"><span className="label">Title</span><input className="input" placeholder={autoTitle()} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
         <div className="row">
           <button className="btn primary" onClick={async () => {
-            const panel = { title: autoTitle(), span: prim === 'stat' ? 4 : prim === 'heatmap' || prim === 'timeseries' ? 8 : 6, view: view() }
+            const panel = { title: autoTitle(), span: prim === 'stat' ? 4 : ['heatmap', 'timeseries', 'graph', 'bipartite', 'swimlane'].includes(prim) ? 8 : 6, view: view() }
             const d = await dashOps([{ op: 'add_panel', page: page.id, panel }], `added ${panel.title}`, `Added ${panel.title} to ${page.id === 'brief' ? 'the Brief' : page.title}`)
             if (d) { useStore.getState().setStudioOpen(false); useStore.getState().setRoute(page.id === 'brief' ? 'brief' : `page:${page.id}`) }
           }}><Icon name="plus" size={14} />Add to {page.id === 'brief' ? 'the Brief' : page.title}</button>

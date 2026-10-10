@@ -66,6 +66,8 @@ def run(engine: "Engine", q: dict[str, Any], text_attrs: set[str] | None = None)
 
 def _events(engine: "Engine", q: dict[str, Any], text_attrs: set[str]) -> dict[str, Any]:
     horizon = engine.now()
+    if q.get("list"):
+        return _list(engine, q, text_attrs)
     where, params = ["ts <= ?"], [horizon.replace(tzinfo=None)]
     t = q.get("time") or {"last_hours": 24}
     if not t.get("all"):
@@ -137,19 +139,64 @@ def _events(engine: "Engine", q: dict[str, Any], text_attrs: set[str]) -> dict[s
     else:
         rows.sort(key=lambda r: -r["v"])
     rows = rows[:2000]
-    out = []
+    out, ids = [], []
     for r in rows:
-        vals = []
+        vals, rid = [], []
         for i, g in enumerate(group):
             v = r[f"g{i}"]
+            rid.append(v if g in ("actor", "object") else None)
             if g in ("actor", "object") and v is not None:
                 v = engine.label(v)
             elif isinstance(v, datetime):
                 v = v.isoformat(sep=" ", timespec="minutes")
             vals.append(v if v is not None else "none")
         out.append(vals + [int(r["v"])])
-    return {"columns": group + [metric], "rows": out,
-            "meta": {"metric": metric, "time_dims": time_dims, "dropped_partial_bucket": partial}}
+        ids.append(rid + [None])
+    meta = {"metric": metric, "time_dims": time_dims, "dropped_partial_bucket": partial}
+    if any(g in ("actor", "object") for g in group):
+        meta["ids"] = ids                       # entity ids behind actor/object labels, so a click opens the evidence
+    return {"columns": group + [metric], "rows": out, "meta": meta}
+
+
+def _list(engine: "Engine", q: dict[str, Any], text_attrs: set[str]) -> dict[str, Any]:
+    """The latest matching events, newest first: structure only (never agent text), each with its event id."""
+    if q.get("group_by"):
+        raise QueryError("a list (feed) query has no group_by")
+    horizon = engine.now()
+    where, params = ["ts <= ?"], [horizon.replace(tzinfo=None)]
+    t = q.get("time") or {"last_hours": 24}
+    if not t.get("all"):
+        hours = float(t.get("last_hours", 24))
+        if not 0 < hours <= 24 * 3650:
+            raise QueryError("time.last_hours must be between 0 and 87600")
+        where.append("ts > ?")
+        params.append((horizon - timedelta(hours=hours)).replace(tzinfo=None))
+    for k, v in (q.get("where") or {}).items():
+        expr, _ = _field_sql(k, text_attrs)
+        if k in ("actor", "object") and isinstance(v, str):
+            v = _resolve(engine, v)
+        if isinstance(v, dict) and "prefix" in v:
+            where.append(f"{expr} LIKE ?")
+            params.append(str(v["prefix"]).replace("%", "") + "%")
+        elif isinstance(v, list):
+            if v:
+                where.append(f"{expr} IN ({','.join('?' * len(v))})")
+                params.extend(str(x) for x in v[:50])
+        else:
+            where.append(f"{expr} = ?")
+            params.append(str(v))
+    n = max(1, min(int(q.get("top", 20)), 100))
+    rows = engine.store.sql(f"SELECT id, ts, actor, action, object, family FROM events WHERE {' AND '.join(where)} "
+                            f"ORDER BY ts DESC LIMIT {n}", params)
+    out, eids, ids = [], [], []
+    for r in rows:
+        ts = r["ts"].isoformat(sep=" ", timespec="minutes") if isinstance(r["ts"], datetime) else str(r["ts"])
+        out.append([ts, engine.label(r["actor"]) if r["actor"] else "", r["action"],
+                    engine.label(r["object"]) if r["object"] else "", r["family"] or ""])
+        eids.append(r["id"])
+        ids.append([None, r["actor"], None, r["object"], None])
+    return {"columns": ["time", "actor", "action", "object", "family"], "rows": out,
+            "meta": {"event_ids": eids, "ids": ids, "list": True}}
 
 
 def _resolve(engine: "Engine", ref: str) -> str:

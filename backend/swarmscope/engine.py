@@ -908,11 +908,13 @@ def _cached_load(pack: Any, adapter: Any, path: Any, slice_override: Any) -> "Ba
     def load():
         return adapter.load(path, slice_override) if "slice_override" in adapter.load.__code__.co_varnames \
             else adapter.load(path)
-    root = ROOT / str(pack.source.get("default_path") or f"data/{pack.id}")
-    if path == "synthetic" or not root.exists():
+    from pathlib import Path
+    root = Path(path) if path and path != "synthetic" and Path(path).exists() else \
+        ROOT / str(pack.source.get("default_path") or f"data/{pack.id}")
+    if path == "synthetic" or not root.exists() or pack.source.get("analysis_only"):
         return load()
-    files = sorted((str(f.relative_to(root)), f.stat().st_size, int(f.stat().st_mtime)) for f in root.rglob("*")
-                   if f.is_file() and not f.name.startswith("_"))
+    files = sorted((str(f.relative_to(root)), f.stat().st_size, int(f.stat().st_mtime)) for f in
+                   (root.rglob("*") if root.is_dir() else [root]) if f.is_file() and not f.name.startswith("_"))
     key = hashlib.sha1(repr((pack.id, path, slice_override, files,
                              (pack.dir / "source.yaml").stat().st_mtime)).encode()).hexdigest()[:16]
     cache = ROOT / "data" / "cache" / f"{pack.id}-{key}.pkl"

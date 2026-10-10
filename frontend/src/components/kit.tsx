@@ -25,7 +25,7 @@ export function Term({ k, children }: { k: string; children?: React.ReactNode })
 }
 
 /* ------------------------------------------------------------------ dropdown menu */
-export interface MenuItem { label: string; icon?: string; onClick?: () => void; hint?: string; disabled?: boolean; sep?: boolean; danger?: boolean }
+export interface MenuItem { label: string; icon?: string; onClick?: () => void; hint?: string; disabled?: boolean; sep?: boolean; danger?: boolean; head?: boolean }
 
 export function Menu({ label, icon = 'edit', items, align = 'right', variant = '' }: {
   label: React.ReactNode; icon?: string; items: MenuItem[]; align?: 'left' | 'right'; variant?: string
@@ -48,6 +48,7 @@ export function Menu({ label, icon = 'edit', items, align = 'right', variant = '
         <div className={`menu ${align}`} role="menu">
           {items.map((it, i) => it.sep
             ? <div key={i} className="menu-sep" />
+            : it.head ? <div key={i} className="menu-head">{it.label}</div>
             : (
               <button key={i} role="menuitem" className={`menu-item ${it.danger ? 'danger' : ''}`} disabled={it.disabled}
                 onClick={() => { setOpen(false); it.onClick?.() }}>

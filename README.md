@@ -51,9 +51,9 @@ The recorded sources need their data first (see [Getting the recorded data](#get
    each one.
 4. **You watch, and it reports.** The live column posts an update every window and raises findings as they appear.
 
-Before you press Start you choose who does the reading (fixed rules for free, or Claude through your Claude Code login,
-with a separate model for the lead agent and for the agents it sends out), how the analysts are organised, whether to
-watch live or replay, and how often you want updates.
+The start screen shows how it will run in one line (who reads it, the analyst team, live or replay, how often it
+reports). Press Start as it is, or open Change to pick Claude through your Claude Code login (a model for the lead
+agent and one for the agents it sends out), another team shape, the replay speed and the update cadence.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/02-setup-dark.png">
@@ -66,28 +66,32 @@ The [guide](docs/GUIDE.md) walks through every screen.
 
 Everything on the dashboard can be changed while it runs, and every change can be undone.
 
+- **The look.** Settings → Look. Start from one of five looks (Observatory, Paper, Console, Clinic, Signal), then
+  change anything: light or dark, the accent colour, the typefaces for headings, text and numbers, density, corners,
+  how panels are drawn, the background, the navigation rail (dark or light, with names or icons only), headline
+  size, label style and motion. Or describe it: "dark, compact, with a teal accent and no animation".
+- **The designer.** Describe a change in words, on any page (Edit → Ask the designer) or for the look. The designer
+  is constrained: it builds only from a fixed library of views (numbers, trends, rankings, grids, tables, latest
+  records, networks of who works with whom, two-sided maps, swimlanes, notes and the built-in panels) and a fixed
+  set of look settings. Every view is checked against your data before it is added, every colour is checked for
+  readable text in light and dark, the colours that mean something (finding levels, evidence status) cannot be
+  changed, and nothing it does is code. With Claude on, a Claude session makes the change; without a model, plain
+  requests still work.
 - **Pages and panels.** Every page has an **Edit** menu. Add any panel, remove or resize panels, rename or reorder
-  pages, give a page its own place in the navigation, or reset it to the source's default.
-- **Build a view.** Pick a chart type (a number, a trend, a ranking, a grid or a table), what to count and how to
-  split it, and see a live preview before you add it.
-- **Ask Claude.** Describe the view you want in a sentence and a Claude session builds it with the same tools you
-  have.
-- **Lenses.** Save a whole layout under a name ("Incident review", "Weekly report") and switch between them from the
-  top bar.
+  pages, or reset a page to the source's default. Click any bar, row, node or lane to open the records behind it.
+- **Build a view.** Pick a chart type, what to count and how to split it, and see a live preview before you add it.
+- **Lenses.** Save a whole layout under a name ("Incident review", "Weekly report") and switch between them.
 - **Words.** Call things what your team calls them: agents, handles, reports, targets, pages.
 - **The Brief.** Choose its glance numbers, how many findings it lists and from which level, and whether it shows
   "What's going on" and the World.
 - **The World.** The 3D view has its own designer: the scene, the zones, the props, and the rules for how agents
-  move (walk to what they work on, gather to talk, step back when stopped). Claude can design it, or you can.
+  move. Claude can design it, or you can.
 - **The analysts.** The default team is one lead analyst that sends explorers to anything that starts to look
-  interesting. Other team shapes are presets you can pick, and any team can be edited role by role.
-- **Your own source.** Post JSON events from any swarm and SwarmFrame works out what your data contains and composes
-  a dashboard around it. Or write a source pack: a folder of YAML files that describes the data, its default views,
-  its World and its questions. See [Use your own data](#use-your-own-data).
+  interesting. Other team shapes are presets, and any team can be edited role by role.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/08-edit-menu-dark.png">
-  <img alt="The Edit menu on a page" src="docs/screenshots/08-edit-menu-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/12-look-dark.png">
+  <img alt="Settings, Look: describe the look, five starting looks, and every setting" src="docs/screenshots/12-look-light.png">
 </picture>
 
 Views composed for a source are remembered. Open the same source again and its pages and World are reused, with a
@@ -118,6 +122,31 @@ files: `source.yaml` (what the data is, what to call things, how names are forme
 and cannot show), and optionally `dashboard.yaml` (default pages), `world.yaml` (the 3D scene), `questions.yaml`
 (good first questions) and `monitors.yaml`. Then point an adapter at your files. The packs in `packs/` (AI Village, the German
 board, Transluce, the generic stream) are working examples, and the [technical reference](docs/REFERENCE.md) lists every field.
+
+## Analyze a dump
+
+Not everything is live. If you already have logs, **Analyze a dump** (on the start screen and in the rail) reads them
+after the fact and writes a report.
+
+1. Point it at a folder or file on your computer, or drop files in the browser. JSON, JSON lines and CSV work,
+   gzipped or zipped. No dump at hand? Use the sample.
+2. SwarmFrame shows what it found in each file and which field it takes as the time, who acted, what they did, what
+   they acted on, their group and their text. Fix the mapping if a guess is wrong. Folders it knows (the
+   collusion.wiki export, the Transluce catalog, the AI Village export) are read with their own reader.
+3. It reads the whole record at once, through the same watchers and analysts as live monitoring, and writes a report:
+   a TL;DR, a timeline, then the analysis, with record ids behind every claim. Rules write it for free in seconds; or
+   let Claude investigate from there with the evidence tools and write it up with a confidence for each conclusion.
+4. Download the report as Markdown, or open the analysis in the full dashboard to explore it.
+
+From the command line:
+
+```bash
+.venv/Scripts/swarmframe analyze path/to/logs --out report.md
+.venv/Scripts/swarmframe analyze path/to/logs --write claude --words 2500-3000 --out report.md
+```
+
+To score a report against [MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench), see
+[the technical reference](docs/REFERENCE.md#testing-against-messageboardauditbench).
 
 ## The sources it ships with
 
@@ -174,7 +203,7 @@ instruction to SwarmFrame's own agents.
 
 ## More
 
-- [Guide](docs/GUIDE.md): a walk through the dashboard, screen by screen.
+- [Guide](docs/GUIDE.md): a walk through the dashboard, screen by screen, and the analysis mode.
 - [Technical reference](docs/REFERENCE.md): every part of the system, its settings and its files.
 - Design notes: [the dashboard](docs/UI_PLAN.md), [the World](docs/WORLD_PLAN.md),
   [the analyst teams](docs/OVERSIGHT_ARCHITECTURES.md), [reading at scale](docs/STRATEGY.md).
