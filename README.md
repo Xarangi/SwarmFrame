@@ -51,7 +51,8 @@ The recorded sources need their data first (see [Getting the recorded data](#get
    each one.
 4. **You watch, and it reports.** The live column posts an update every window and raises findings as they appear.
 
-The start screen shows how it will run in one line (who reads it, the analyst team, live or replay, how often it
+The switch at the top of the start screen chooses between watching a swarm and analyzing a dump of logs you
+already have (see [Analyze a dump](#analyze-a-dump)). The start screen shows how it will run in one line (who reads it, the analyst team, live or replay, how often it
 reports). Press Start as it is, or open Change to pick Claude through your Claude Code login (a model for the lead
 agent and one for the agents it sends out), another team shape, the replay speed and the update cadence.
 
@@ -137,7 +138,9 @@ after the fact and writes a report.
    collusion.wiki export, the Transluce catalog, the AI Village export) are read with their own reader.
 3. It reads the whole record at once, through the same watchers and analysts as live monitoring, and writes a report:
    a TL;DR, a timeline, then the analysis, with record ids behind every claim. Rules write it for free in seconds; or
-   let Claude investigate from there with the evidence tools and write it up with a confidence for each conclusion.
+   let Claude investigate: several investigators each read one stretch of the record in parallel, one reads across
+   all of it, and a writer turns their notes into the report with a confidence for each conclusion. If Claude cannot
+   run (signed out, no CLI), you still get the rules report and a note saying why.
 4. Choose the analyst team: one **composed** for this data (a lead with explorers, plus readers and specialists
    switched on by what the records show, each with its reason), a preset, a **search** that tries several teams on
    the first 30% and keeps the best, or a **comparison** of several teams on the whole record (what each found, what

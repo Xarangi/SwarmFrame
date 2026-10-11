@@ -169,3 +169,17 @@ def test_writer_stretches_and_window_tool():
     assert w["actors"] and w["resources"] and w["by_action"] and "text" not in str(w).lower()[:0]
     _, names = tools.mcp_server()
     assert "mcp__evidence__window" in names
+
+
+def test_a_failed_claude_writer_keeps_the_rules_report(tmp_path, monkeypatch):
+    """When Claude cannot write (signed out, no CLI), the analysis still finishes with the rules report and says why."""
+    from swarmscope.analysis import jobs, writer
+    monkeypatch.setattr(jobs, "_save", lambda job: None)
+
+    async def signed_out(*a, **k):
+        raise RuntimeError("Failed to authenticate: OAuth session expired and could not be refreshed")
+    monkeypatch.setattr(writer, "write_report", signed_out)
+    d, _ = _dump(tmp_path)
+    job = asyncio.run(jobs.run_blocking(str(d), {"write": "claude"}))
+    assert job.status == "done" and job.markdown and not job.written
+    assert "signed out" in job.writer_error and job.public()["writer_error"] == job.writer_error

@@ -129,6 +129,8 @@ def main(argv: list[str] | None = None) -> None:
         if job.status != "done":
             print(f"analysis failed: {job.error}\n{job.message}")
             sys.exit(1)
+        if job.writer_error:
+            print(f"note: {job.writer_error} The rules report was written instead.", file=sys.stderr)
         from swarmscope.analysis.report import summary_counts, word_count
         md = job.written or job.markdown
         if a.out:

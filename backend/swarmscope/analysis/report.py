@@ -214,6 +214,16 @@ def _cite(ids: list[str]) -> str:
     return " " + " ".join(f"`{i}`" for i in ids[:4]) if ids else ""
 
 
+def _num(x: float) -> str:
+    """A count for prose: whole numbers without a decimal point."""
+    return f"{int(round(x)):,}" if abs(x - round(x)) < 0.05 or x >= 100 else f"{x:,.1f}"
+
+
+def _n(x: float, noun: str) -> str:
+    """'1 day', '3 days', '2.5 days'."""
+    return f"{_num(x)} {noun}{'' if _num(x) == '1' else 's'}"
+
+
 def to_markdown(rep: dict[str, Any]) -> str:
     nn = rep["nouns"]
     a, r = nn["agent"], nn["resource"]
@@ -223,10 +233,11 @@ def to_markdown(rep: dict[str, Any]) -> str:
     for t in rep["timeline"]:
         L.append(f"- **{t['ts']}** {t['text']}{_cite(t.get('cites', []))}")
     L += ["", "## Analysis", ""]
+    tot = rep["totals"]
     L += ["### The data", "",
-          f"{rep['totals']['records']:,} records over {rep['span']['days']} days ({rep['span']['start']} to {rep['span']['end']} UTC): "
-          f"{rep['totals']['actors'] or 0:,} {a}s, {rep['totals']['objects'] or 0:,} {r}s, {rep['totals']['families'] or 0} kinds of "
-          f"activity, {rep['totals']['texts'] or 0:,} pieces of written text.", ""]
+          f"{_n(tot['records'], 'record')} over {_n(rep['span']['days'], 'day')} ({rep['span']['start']} to {rep['span']['end']} UTC): "
+          f"{_n(tot['actors'] or 0, a)}, {_n(tot['objects'] or 0, r)}, {_n(tot['families'] or 0, 'kind')} of "
+          f"activity, {_n(tot['texts'] or 0, 'piece')} of written text.", ""]
     if rep["data"]["has"]:
         L.append(f"It records {', '.join(rep['data']['has'])}." + (f" It cannot show {', '.join(rep['data']['lacks'])}." if rep["data"]["lacks"] else ""))
     if rep["data"].get("naming"):
@@ -234,7 +245,8 @@ def to_markdown(rep: dict[str, Any]) -> str:
     if rep["data"].get("files_skipped"):
         L += ["", f"Not used (no time field): {', '.join(rep['data']['files_skipped'])}."]
     L += ["", "### When it happened", "",
-          f"On an average day there are {rep['activity']['daily_mean']:,} records. The busiest days:", ""]
+          (f"On an average day there are {_num(rep['activity']['daily_mean'])} records. The busiest days:"
+           if rep["span"]["days"] > 1 else "The busiest days:"), ""]
     L += ["| Day | Records |", "| --- | ---: |"] + [f"| {d} | {c:,} |" for d, c in rep["activity"]["peak_days"]]
     L += ["", "The busiest hours: " + ", ".join(f"{h} ({c:,})" for h, c in rep["activity"]["peak_hours"]) + ".", ""]
     L += ["What the records are, by kind: " + ", ".join(f"{f} ({c:,})" for f, c in rep["activity"]["by_family"][:8]) + ".", ""]

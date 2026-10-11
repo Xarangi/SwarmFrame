@@ -415,6 +415,15 @@ benchmark's `scripts/strip_analysis_fields.py` and `scripts/fill_verbatim.py` (P
 `python -X utf8` on Windows), normalise line endings, and check the four files against `data/SHA256SUMS.variants`.
 Scores from a judge other than the benchmark's published one are not comparable to its leaderboard.
 
+To score analyst teams against it, `scripts/mbab_team.sh <team> [investigators] [parallel]` reads the bench with that
+team (`composed`, `auto`, or a preset id), lets Claude write the report with the parallel investigators, grades it and
+keeps the scores in `data/bench/teams/g_<team>.json`. Run one team at a time on a machine short of memory: one read of
+the whole record peaks near 2 GB. The Claude calls go through the standalone Claude Code CLI's login (`claude`, then
+`/login`), which is separate from the desktop app's.
+
+Memory: the store caps DuckDB (`SWARMSCOPE_DB_MEMORY`, default 1500MB; `SWARMSCOPE_DB_THREADS`, default 4) and spills
+to `data/cache/duckdb_tmp` (`SWARMSCOPE_DB_TMP`) rather than failing.
+
 ## The World: a 3D map of the swarm
 
 The World page places every agent in a 3D scene where **position is a measurement**. Agents that work on the same

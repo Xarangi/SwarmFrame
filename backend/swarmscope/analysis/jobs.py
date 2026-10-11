@@ -59,6 +59,7 @@ class Job:
     comparison: dict[str, Any] | None = None
     search: dict[str, Any] | None = None
     written: str = ""                 # Claude's write-up, when asked for
+    writer_error: str = ""            # why Claude's write-up is missing, when it was asked for and failed
     writer: dict[str, Any] | None = None
     error: str = ""
     task: asyncio.Task | None = None
@@ -81,7 +82,7 @@ class Job:
                 "progress": round(self.progress, 3), "message": self.message, "error": self.error,
                 "seconds": round((self.finished or time.time()) - self.started, 1), "options": self.options,
                 "has_report": self.report is not None, "words": word_count(self.markdown) if self.markdown else 0,
-                "written_words": word_count(self.written) if self.written else 0, "writer": self.writer,
+                "written_words": word_count(self.written) if self.written else 0, "writer": self.writer, "writer_error": self.writer_error,
                 "runs": [r.public() for r in self.runs], "main": self.main, "comparison": self.comparison,
                 "search": self.search}
 
@@ -377,11 +378,16 @@ async def _run(job: Job) -> None:
             job.status, job.message = "writing", "Claude is writing the report from the evidence"
             await ensure_engine(job)
             from swarmscope.analysis.writer import write_report
-            res = await write_report(job.engine, job.report, model=o.get("model", "claude-sonnet-5-5"), effort=o.get("effort", "low"),
-                                     words=o.get("words"), max_turns=int(o.get("max_turns", 40)),
-                                     rounds=int(o.get("rounds", 3)), investigators=int(o.get("investigators", 4)),
-                                     parallel=int(o.get("parallel", 5)))
-            job.written, job.writer = res["markdown"], {k: v for k, v in res.items() if k != "markdown"}
+            try:
+                res = await write_report(job.engine, job.report, model=o.get("model", "claude-sonnet-5-5"), effort=o.get("effort", "low"),
+                                         words=o.get("words"), max_turns=int(o.get("max_turns", 40)),
+                                         rounds=int(o.get("rounds", 3)), investigators=int(o.get("investigators", 4)),
+                                         parallel=int(o.get("parallel", 5)))
+                job.written, job.writer = res["markdown"], {k: v for k, v in res.items() if k != "markdown"}
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:                     # the rules report stands; say why Claude's is missing
+                job.writer_error = _plain_error(exc)
         _save(job)
         job.status, job.progress, job.message = "done", 1.0, "done"
     except asyncio.CancelledError:
@@ -392,6 +398,16 @@ async def _run(job: Job) -> None:
         job.message = job.message or traceback.format_exc(limit=3)[-600:]
     finally:
         job.finished = time.time()
+
+
+def _plain_error(exc: BaseException) -> str:
+    """Why Claude could not write the report, in words a reader can act on."""
+    t = f"{exc}"
+    if "authenticate" in t.lower() or "oauth" in t.lower() or "login" in t.lower():
+        return "Claude Code is signed out. Run `claude` in a terminal and sign in again (/login), then analyze again."
+    if "not found" in t.lower() and "claude" in t.lower():
+        return "The Claude Code CLI was not found on this machine."
+    return f"Claude could not write the report ({type(exc).__name__}: {t[:300]})."
 
 
 def _save(job: Job) -> None:

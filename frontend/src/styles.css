@@ -821,6 +821,10 @@ hr.soft { border: 0; border-top: 1px solid var(--line-2); margin: 12px 0; }
 .report-doc blockquote { margin: 8px 0; padding: 6px 12px; border-left: 3px solid var(--line); color: var(--ink-2); background: var(--sunken); border-radius: 0 6px 6px 0; }
 .report-doc .tldr { font-size: 15.5px; line-height: 1.6; padding: 12px 16px; background: var(--accent-soft); border-radius: var(--radius-sm); margin: 12px 0 4px; }
 .report-tabs { margin-bottom: 14px; }
+.writer-note { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; margin-bottom: 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--sev-look) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--sev-look) 35%, transparent); font-size: 13px; color: var(--ink); }
+.writer-note svg { color: var(--sev-look); flex: none; margin-top: 2px; }
+.report-doc code.rec-ref { cursor: pointer; white-space: nowrap; font-size: 11px; color: var(--ink-2); border: 1px solid var(--line-2); }
+.report-doc code.rec-ref:hover { color: var(--accent); border-color: var(--accent); }
 .quiet-actions { display: flex; flex-wrap: wrap; gap: 2px; margin: -6px 0 0 -8px; }
 .quiet-actions .btn { color: var(--ink-3); }
 .quiet-actions .btn:hover { color: var(--ink); }

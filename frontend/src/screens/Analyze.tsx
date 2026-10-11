@@ -20,7 +20,7 @@ interface RunInfo { label: string; status: string; seconds: number; metrics: Rec
 interface Job { id: string; path: string; source: string; status: string; progress: number; message: string; error: string; seconds: number
   runs?: RunInfo[]; main?: number; comparison?: { rows: CmpRow[]; best: string; consensus_size: number; note: string } | null
   search?: { trials: CmpRow[]; picked: string; note: string; fraction: number } | null; run_markdown?: string[]
-  has_report: boolean; words: number; written_words: number; writer?: { model: string; cost_usd: number; tool_calls: number } | null
+  has_report: boolean; words: number; written_words: number; writer_error?: string; writer?: { model: string; cost_usd: number; tool_calls: number } | null
   markdown?: string; written?: string; options?: Record<string, any> }
 
 export function Analyze() {
@@ -312,7 +312,7 @@ function ReportView({ job, onBack }: { job: Job; onBack: () => void }) {
   return (
     <div className="report fade-in">
       <div className="report-head">
-        <button className="btn ghost" onClick={onBack}><Icon name="arrow" size={14} />New analysis</button>
+        <button className="btn ghost" onClick={onBack}><span style={{ display: 'inline-flex', transform: 'scaleX(-1)' }}><Icon name="arrow" size={14} /></span>New analysis</button>
         <span style={{ flex: 1 }} />
         <button className="btn" onClick={download}><Icon name="download" size={14} />Download .md</button>
         <button className="btn" onClick={() => navigator.clipboard?.writeText(md)}>Copy</button>
@@ -335,6 +335,7 @@ function ReportView({ job, onBack }: { job: Job; onBack: () => void }) {
       {view === 'teams' && job.comparison && <StrategyTable title="The teams compared" note={job.comparison.note + ` ${job.comparison.consensus_size} findings were raised by most of the teams.`} rows={job.comparison.rows} picked={job.comparison.best}
         onPick={(label) => { const i = (job.runs ?? []).findIndex((r) => r.label === label); if (i >= 0) { setRunIx(i); setTab('rules'); setView('report') } }} current={(job.runs ?? [])[runIx]?.label} />}
       {view === 'team' && team && <TeamCard c={team} />}
+      {job.writer_error && <div className="writer-note"><Icon name="flag" size={14} /><span>{job.writer_error} This is the rules report.</span></div>}
       {view === 'report' && <>
       <div className="mono muted report-meta">
         {(job.runs?.length ?? 0) > 1 && <span>{job.runs![runIx]?.label} · </span>}
@@ -355,7 +356,7 @@ export function Markdown({ text, onRecord }: { text: string; onRecord?: (id: str
     return <React.Fragment key={k}>{parts.map((p, i) => {
       if (p.startsWith('`') && p.endsWith('`')) {
         const c = p.slice(1, -1)
-        return /^ev:/.test(c) && onRecord ? <code key={i} className="claim-ref" style={{ cursor: 'pointer' }} onClick={() => onRecord(c)}>{c}</code> : <code key={i}>{c}</code>
+        return /^ev:/.test(c) && onRecord ? <code key={i} className="claim-ref rec-ref" title={`${c} · open the record`} onClick={() => onRecord(c)}>{c.split(':').pop()}</code> : <code key={i}>{c}</code>
       }
       if (p.startsWith('**') && p.endsWith('**')) return <b key={i}>{p.slice(2, -2)}</b>
       if (p.length > 2 && p.startsWith('*') && p.endsWith('*')) return <em key={i}>{p.slice(1, -1)}</em>
