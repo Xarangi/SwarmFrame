@@ -9,12 +9,13 @@ designer works, and the side mode for analysing a dump of logs after the fact. E
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="screenshots/01-start-dark.png">
-  <img alt="The start screen: the sources, one line saying how it will run, and Start" src="screenshots/01-start-light.png">
+  <img alt="The start screen: watch a swarm or analyze a dump, the sources, one line saying how it will run, and Start" src="screenshots/01-start-light.png">
 </picture>
 
-The start screen is one list. **Your own event stream** is the live option: post JSON from any system and
-SwarmFrame works out what your stream contains from the first events that arrive. Below it are the recorded
-sources. For the AI Village the recommended week is selected already.
+The switch at the top chooses what to do: **Watch a swarm** (this walk-through) or **Analyze a dump** of logs you
+already have (step 12). Below it is one list of sources. **Your own event stream** is the live option: post JSON from
+any system and SwarmFrame works out what your stream contains from the first events that arrive. Below it are the
+recorded sources. For the AI Village the recommended week is selected already.
 
 Under the list, **How it runs** says in one line who does the reading, which analyst team, whether it plays live or
 as a replay, and how often it reports. Press **Start** as it is.
@@ -32,11 +33,13 @@ as a replay, and how often it reports. Press **Start** as it is.
   through your Claude Code login" lets you pick a model and effort for the **lead agent** (it runs the analyst team
   and is the assistant in the live column) and for the **explorers** it sends out.
 - **The analyst team.** The default is a lead analyst with explorers: when something starts to look interesting,
-  the lead sends an explorer to look into it and lets it go when things calm down. Each source also suggests a team
-  shape that suits it.
+  the lead sends an explorer to look into it and lets it go when things calm down. **Composed for this data** adds
+  readers and specialists switched on by what the records show, each with its reason. Each source also suggests a
+  team shape that suits it, and **More team shapes** lists every preset.
 - **How to play it** and **replay speed.** Watch the busiest stretch in real time, or replay the whole record faster.
 - **How often it reports.** An activity line every window, every minute or every five minutes, and, with a model on,
   a short summary from the lead agent.
+- **Monitoring organization.** The default, or one of the baselines used for comparison.
 
 ## 3. Let it build the dashboard
 
@@ -166,6 +169,10 @@ it understood.
 Then change anything: light or dark, the accent, the typefaces for headings, text and numbers, density, corners,
 panels, the background, the rail (dark or matching the page, names or icons only), headlines, labels and motion. Or
 describe the look in the box at the top. **Undo** steps back through every change.
+
+The other Settings tabs: **Dashboard** (lenses, the words used for agents and resources, showing the machinery as a
+page), **Monitoring** (autonomy and models, the executive, budgets, and the parts each monitor is built from) and **Test bench** (score the monitoring
+organizations on a synthetic swarm with planted ground truth).
 
 ## 11. See how the oversight works
 

@@ -37,7 +37,7 @@ On macOS or Linux use `.venv/bin/` in place of `.venv/Scripts/`. Then open http:
 The recorded sources need their data first (see [Getting the recorded data](#getting-the-recorded-data)). The live option,
 [any JSON event stream](#use-your-own-data), works without downloading anything.
 
-## How it works, in four steps
+## How it works
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/01-start-dark.png">
@@ -51,10 +51,12 @@ The recorded sources need their data first (see [Getting the recorded data](#get
    each one.
 4. **You watch, and it reports.** The live column posts an update every window and raises findings as they appear.
 
-The switch at the top of the start screen chooses between watching a swarm and analyzing a dump of logs you
-already have (see [Analyze a dump](#analyze-a-dump)). The start screen shows how it will run in one line (who reads it, the analyst team, live or replay, how often it
-reports). Press Start as it is, or open Change to pick Claude through your Claude Code login (a model for the lead
-agent and one for the agents it sends out), another team shape, the replay speed and the update cadence.
+The switch at the top of the start screen chooses between **Watch a swarm** and **Analyze a dump** (logs you
+already have; see [Analyze a dump](#analyze-a-dump)). Under the sources, **How it runs** sums up the choices in one
+line: who reads it, the analyst team, live or replay, how often it reports. Press **Start** as it is, or open
+**Change** for every option: Claude through your Claude Code login (a model and effort for the lead agent and for the
+agents it sends out), the analyst team (the default, one composed for this data, or any preset), live or replay, the
+replay speed, the update cadence and the monitoring organization.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/02-setup-dark.png">
@@ -105,7 +107,7 @@ Recompose button if you want a fresh start.
 SwarmFrame is not tied to the sources below. Any system that produces agent activity can be watched, and the
 dashboard is composed around whatever your data turns out to contain.
 
-**Post JSON events.** Start SwarmFrame, pick **Any event stream** on the start screen, and post events to
+**Post JSON events.** Start SwarmFrame, pick **Your own event stream** on the start screen, and post events to
 `/ingest/events`. Only `action` is required. Every other field you add unlocks more of the dashboard: an `actor`
 gives you per-agent views, an `object` gives you shared places and convergence, `text` gives you copied-content
 checks, a `group` gives you per-team rows in "What's going on".
@@ -128,24 +130,27 @@ board, Transluce, the generic stream) are working examples, and the [technical r
 
 ## Analyze a dump
 
-Not everything is live. If you already have logs, switch the start screen to **Analyze a dump** (the rail's **New** opens it) and it reads them
-after the fact and writes a report.
+Not everything is live. If you already have logs, switch the start screen to **Analyze a dump** (**New** in the
+rail opens the start screen). It reads the whole record at once, through the same watchers and analysts as live
+monitoring, and writes a report.
 
-1. Point it at a folder or file on your computer, or drop files in the browser. JSON, JSON lines and CSV work,
-   gzipped or zipped. No dump at hand? Use the sample.
-2. SwarmFrame shows what it found in each file and which field it takes as the time, who acted, what they did, what
-   they acted on, their group and their text; **Check how it was read** fixes a wrong guess. Folders it knows (the
-   collusion.wiki export, the Transluce catalog, the AI Village export) are read with their own reader.
-3. It reads the whole record at once, through the same watchers and analysts as live monitoring, and writes a report:
-   a TL;DR, a timeline, then the analysis, with record ids behind every claim. Rules write it for free in seconds; or
-   let Claude investigate: several investigators each read one stretch of the record in parallel, one reads across
-   all of it, and a writer turns their notes into the report with a confidence for each conclusion. If Claude cannot
-   run (signed out, no CLI), you still get the rules report and a note saying why.
-4. Choose the analyst team: one **composed** for this data (a lead with explorers, plus readers and specialists
-   switched on by what the records show, each with its reason), a preset, a **search** that tries several teams on
-   the first 30% and keeps the best, or a **comparison** of several teams on the whole record (what each found, what
-   most of them agree on, how much each read, what it cost).
-5. Download the report as Markdown, or open the analysis in the full dashboard to explore it.
+1. **Point it at the logs.** A folder or file on your computer, or files dropped in the browser. JSON, JSON lines
+   and CSV work, gzipped or zipped. No dump at hand? Use the sample.
+2. **Check how it was read.** One line says what can be read as events and what was skipped. **Check how it was
+   read** shows which field it takes as the time, who acted, what they did, what they acted on, their group and
+   their text, and fixes a wrong guess. Folders it knows (the collusion.wiki export, the Transluce catalog, the AI
+   Village export) are read with their own reader.
+3. **Choose how it reads** (optional; **Change** on the "How it reads" line):
+   - *The analyst team*: one **composed** for this data (a lead with explorers, plus readers and specialists
+     switched on by what the records show, each with its reason), a preset, a **search** that tries five teams on
+     the first 30% and keeps the best, or a **comparison** of several teams on the whole record (what each found,
+     what most of them agree on, how much each read, what it cost).
+   - *Who writes the report*: rules, free and in seconds; or Claude, where several investigators each read one
+     stretch of the record in parallel, one reads across all of it, and a writer turns their notes into the report
+     with a confidence for each conclusion. If Claude cannot run (signed out, no CLI), you still get the rules
+     report and a note saying why.
+4. **Read the report.** A TL;DR, a timeline, then the analysis, with record ids behind every claim. Download it as
+   Markdown, or open the analysis in the full dashboard to explore it.
 
 From the command line:
 
@@ -156,14 +161,16 @@ From the command line:
 .venv/Scripts/swarmframe analyze path/to/logs --search
 ```
 
-To score a report against [MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench), see
+On [MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench) the parallel Claude writer
+roughly doubles the score of the earlier single-session writer (judged locally, so not comparable to the
+leaderboard). How to run it, and the results so far, are in
 [the technical reference](docs/REFERENCE.md#testing-against-messageboardauditbench).
 
 ## The sources it ships with
 
 | Source | What it is | Kind |
 |---|---|---|
-| Any event stream | Your own JSON events, as above. | Live |
+| Your own event stream | Your own JSON events, as above. | Live |
 | AI Village | Twenty-one AI agents with their own computers and a shared chat, over one week: messages, computer sessions, goals, memory checkpoints, pauses, searches, outreach requests and the reasoning behind each action. | Recorded |
 | The German message board | Handles writing on a shared wiki, with groups that converge on the same pages, text that spreads between them, and moderators deleting pages in sweeps. | Recorded |
 | Agent activity on the web | Transluce's catalog of 37,649 web-scan reports attributed to autonomous agents. A record of targets and methods, with no agent identities. | Recorded |

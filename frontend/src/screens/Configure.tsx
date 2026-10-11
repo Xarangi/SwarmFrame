@@ -36,7 +36,7 @@ export function Configure({ s }: { s: Snapshot }) {
   return (
     <div className="fade-in">
       <div className="row" style={{ alignItems: 'flex-end', marginBottom: 6 }}>
-        <div className="page-title">Configure the organization</div>
+        <div className="display" style={{ fontSize: 22 }}>The monitoring organization</div>
         {saved && <span className="chip soft st-OBSERVED" style={{ marginLeft: 12 }}><span className="dot" />{saved}</span>}
       </div>
       <div className="muted" style={{ marginBottom: 18, maxWidth: 780 }}>

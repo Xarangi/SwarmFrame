@@ -5,6 +5,17 @@ swarm; policy researcher on Transluce; ML engineer linking a JSON stream). All t
 front door works, the dashboard behind it is a wall. This document diagnoses why, sets the design principles we will
 hold to, lays out the new information architecture, and ends with the implementation plan.
 
+## Update (2026-10-11): one way in, quieter pages
+
+- **One way in.** The rail's foot is Under the hood, Settings and one **New**. The start screen opens with a switch
+  between Watch a swarm and Analyze a dump (`ModeSwitch` in `screens/Compose.tsx`); the numbered steps line and the
+  separate dump card are gone. Every option is still there, behind **Change** on the "How it runs" line.
+- **Analyze a dump in two lines.** What it can read (with *Check how it was read* for the mapping) and how it reads
+  (team and writer, behind Change). The report opens first; the team comparison and the team card are tabs.
+- **Quieter pages.** The Brief headline is one sentence with the counts underneath; the live column folds "how to
+  study it"; the finding drawer keeps two primary actions and turns the rest into a quiet row; Settings tabs are
+  Look, Dashboard, Monitoring, Test bench.
+
 ## Update (2026-10-10): one design system, a constrained designer, fewer controls
 
 - **Tokens all the way down.** `frontend/src/styles.css` was rewritten as one system that reads every colour,

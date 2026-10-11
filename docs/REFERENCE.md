@@ -44,15 +44,16 @@ analyst and the live-column summaries read it too, so updates cover what is goin
 views saved for this source", with a **Recompose** link). A focus instruction also recomposes. Built-in views from
 each pack's `dashboard.yaml` are fixed as before. Starting a new source starts a clean live column.
 
-**The journey.** Compose mode states the whole path once, as four numbered steps at the top: *you pick the data* →
-*an agent reads it* (what it records, what it cannot show) → *it builds your dashboard* (pages and an analyst team
-for this data, each with its reason) → *you watch, it reports* (the live column narrates every window and raises
-findings with sources; ask it anything). The form below is numbered to match (data, who reads, team shape, how to
-play), and a *When you press Start* line says in one sentence what will happen with the current choices. The
-composing screen ends with step 6, **Explaining it to you**: what the data can and cannot show, which team reads it
-and why, how to study it, and good first questions (from the pack's `questions.yaml`; one click puts a question in
-the live column). The same orientation is posted as the live column's first message (`assistant/orientation.py`,
-`GET /api/orientation`), in every LLM mode.
+**The journey.** The start screen (`screens/Compose.tsx`) has a switch between **Watch a swarm** and **Analyze a
+dump**, one list of sources, and a **How it runs** line that sums up the choices as pills (who reads, the team, live
+or replay, the cadence); **Change** opens every option (reader and models, the team including *Composed for this
+data* and every preset, live or replay, speed, cadence, monitoring organization), and one sentence says what will
+happen with the current choices. The composing screen ends with **Explaining it to you**: what the data can and
+cannot show, which team reads it and why, how to study it, and good first questions (from the pack's
+`questions.yaml`; one click puts a question in the live column). The same orientation is posted as the live
+column's first message (`assistant/orientation.py`, `GET /api/orientation`), in every LLM mode, with the study steps
+folded. The rail holds Brief, Findings, World, Investigations, Control (when the source has control), this source's
+pages, and at the foot Under the hood, Settings and **New** (back to the start screen).
 
 **Citations.** Every finding carries numbered sources (`dashboard/cites.py`): the claims behind it (newest monitor
 reports first, the one matching the finding's title leading; for analyst escalations, the evidence in the case
@@ -95,7 +96,7 @@ plain words.
 | The German message board | The collusion.wiki export: handles on a shared wiki, moderator sweeps |
 | Agent activity on the web | The Transluce catalog: 37,649 scan reports attributed to agents, no identities |
 | A Claude Code swarm | Live agents from the SwarmFrame runner or any Claude Code session's hooks |
-| Any event stream | Whatever you post to `/ingest/events`; capabilities inferred, dashboard composed around them |
+| Your own event stream | Whatever you post to `/ingest/events`; capabilities inferred, dashboard composed around them |
 
 For frontend development run `npm run dev` in `frontend/` (port 5173, proxied to the API).
 
@@ -664,6 +665,7 @@ backend/swarmscope/  scale (templates, cohorts, outliers, triage) · dashboard (
                      designers) · agents (topology spec, runtime, runners, org tools, skills, divisions, topologies/) · assistant (copilot,
                      chat hub, operator tools) · channel (Claude Code channel server) · core models · store · ingest · sources · org (watchers, monitors,
                      executive, investigations, directives, risk) · strategies · llm (router, evidence tools)
+                     · analysis (dump detection, jobs, report, Claude writer) · agents/composer (team from parts)
                      · control (plane, simulator) · runner · api · evals · cli
 packs/               ai_village · german_wiki · transluce · claude_code · generic_stream (each may ship dashboard.yaml built-in views);
                      swarm_scale is a synthetic test fixture, not offered in the dashboard
