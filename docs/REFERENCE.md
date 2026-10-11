@@ -421,6 +421,24 @@ keeps the scores in `data/bench/teams/g_<team>.json`. Run one team at a time on 
 the whole record peaks near 2 GB. The Claude calls go through the standalone Claude Code CLI's login (`claude`, then
 `/login`), which is separate from the desktop app's.
 
+Results so far (judge Sonnet 5.5 at low effort, writer Sonnet 5.5 at low effort; not comparable to the leaderboard;
+one run each unless noted):
+
+| Report | Headline | Points (strict) | Points (raw) | Points at 0.7 or more | TL;DR |
+|---|---:|---:|---:|---:|---:|
+| Rules only | 0.000 | 0.000 | 0.016 | 0 | 0.0 |
+| Claude, one session (old writer) | 0.060 | 0.000 | 0.047 | 0 | 0.2 |
+| Claude, rounds (old writer) | 0.037 | 0.011 | 0.105 | 1 | 0.1 |
+| Claude, parallel investigators: composed team, run 1 | 0.093 | 0.047 | 0.166 | 3 | 0.2 |
+| Claude, parallel investigators: composed team, run 2 | 0.149 | 0.084 | 0.168 | 5 | 0.3 |
+| Claude, parallel investigators: lead with explorers | 0.104 | 0.063 | 0.155 | 4 | 0.2 |
+| Claude, parallel investigators: triage tree | 0.112 | 0.074 | 0.161 | 4 | 0.2 |
+
+The parallel writer roughly doubles the score (mean 0.115 over four runs against a best of 0.060 before) for about
+$2.2 to $2.6 of writing per report. The analyst team made no difference that a single run can show: two runs of the
+same team differed by 0.056, more than the spread between teams, so ranking teams on this bench needs several runs
+each.
+
 Memory: the store caps DuckDB (`SWARMSCOPE_DB_MEMORY`, default 1500MB; `SWARMSCOPE_DB_THREADS`, default 4) and spills
 to `data/cache/duckdb_tmp` (`SWARMSCOPE_DB_TMP`) rather than failing.
 
