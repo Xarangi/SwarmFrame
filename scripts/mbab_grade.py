@@ -93,6 +93,7 @@ async def main() -> None:
     ap.add_argument("--model", default="claude-sonnet-5-5")
     ap.add_argument("--effort", default="low")
     ap.add_argument("--out", default=None, help="write per-point scores here (no quotes, no reasons)")
+    ap.add_argument("--parallel", type=int, default=9, help="at most this many judge calls at once")
     a = ap.parse_args()
     b = Path(a.bench)
     human = (b / "benchmark" / "human_report.txt").read_text(encoding="utf-8")
@@ -109,7 +110,12 @@ async def main() -> None:
     tmeta = json.loads((b / "rubrics" / "tldrh_1.json").read_text(encoding="utf-8"))
     jobs.append(grade_sheet((b / "rubrics" / "tldrh_1.md").read_text(encoding="utf-8"), [tmeta.get("rubric_id", "TLDRH")],
                             human, tldr, a.model, a.effort))
-    res = await asyncio.gather(*jobs)
+    gate = asyncio.Semaphore(max(1, a.parallel))
+
+    async def gated(coro):
+        async with gate:
+            return await coro
+    res = await asyncio.gather(*(gated(j) for j in jobs))
     points: dict[str, float] = {}
     for r in res[:-1]:
         points.update(r)

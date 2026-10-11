@@ -91,8 +91,7 @@ export default function App() {
         <div className="nav-foot">
           {live && <Item id="hood" icon="hood" label="Under the hood" />}
           {live && <Item id="settings" icon="configure" label="Settings" />}
-          {!loading && <button className={`nav-item new ${composing ? 'active' : ''}`} onClick={() => setRoute('compose')} title="Watch something new"><Icon name="plus" /><span className="nav-text">New source</span></button>}
-          {!loading && <button className={`nav-item new ${analyzing ? 'active' : ''}`} onClick={() => setRoute('analyze')} title="Analyze a dump"><Icon name="file" /><span className="nav-text">Analyze a dump</span></button>}
+          {!loading && <button className={`nav-item new ${composing || analyzing ? 'active' : ''}`} onClick={() => setRoute('compose')} title="Watch a new swarm, or analyze a dump"><Icon name="plus" /><span className="nav-text">New</span></button>}
         </div>
       </nav>
       <div className="main">

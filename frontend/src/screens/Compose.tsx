@@ -17,7 +17,21 @@ interface Info { root: string; hook_script: string; python: string; url: string 
 interface Slice { goal: string; start: string; days: number; chat: number; sessions: number; agents: number; title: string }
 
 const LIVE_MIN_EVENTS = 150
-const STEPS = ['Pick the data', 'An agent reads it', 'It builds your dashboard', 'You watch, it reports']
+
+/** The two ways in: watch a swarm (live or replayed), or analyze a dump after the fact. */
+export function ModeSwitch({ on }: { on: 'watch' | 'analyze' }) {
+  const setRoute = useStore((s) => s.setRoute)
+  return (
+    <div className="mode-switch" role="tablist" aria-label="What to do">
+      <button role="tab" aria-selected={on === 'watch'} className={on === 'watch' ? 'on' : ''} onClick={() => setRoute('compose')}>
+        <Icon name="eye" size={15} /><span><b>Watch a swarm</b><small>live, or a recorded one replayed</small></span>
+      </button>
+      <button role="tab" aria-selected={on === 'analyze'} className={on === 'analyze' ? 'on' : ''} onClick={() => setRoute('analyze')}>
+        <Icon name="file" size={15} /><span><b>Analyze a dump</b><small>logs you already have, read at once</small></span>
+      </button>
+    </div>
+  )
+}
 
 /** Remember, per browser tab, which session has been composed, so reloading lands on the dashboard. */
 export const composedKey = 'ss.composed'
@@ -123,9 +137,7 @@ export function Compose() {
         <SwarmField input={DEMO_FIELD} />
         <h1 className="compose-title">What should we watch?</h1>
         <p className="compose-lede">Pick a source and press Start. An agent reads the data, builds a dashboard for it, and keeps telling you what is going on.</p>
-        <div className="steps-line" aria-label="How SwarmFrame works">
-          {STEPS.map((t, i) => <React.Fragment key={t}>{i > 0 && <span className="sep">→</span>}<span><b>{i + 1}</b>{t}</span></React.Fragment>)}
-        </div>
+        <ModeSwitch on="watch" />
       </section>
 
       {running && (
@@ -258,14 +270,6 @@ export function Compose() {
         {err && <div className="mono" style={{ color: 'var(--st-contradicted)' }}>{err}</div>}
       </section>
 
-      <div className="side-card">
-        <span className="side-icon"><Icon name="file" /></span>
-        <div>
-          <div style={{ fontWeight: 600 }}>Have a dump instead?</div>
-          <div className="muted" style={{ fontSize: 13 }}>Analyze a folder or file of logs after the fact (JSON, JSON lines, CSV, gzipped or zipped) and get a written report with sources. No live monitoring.</div>
-        </div>
-        <button className="btn" onClick={() => setRoute('analyze')}>Analyze a dump <Icon name="arrow" size={14} /></button>
-      </div>
     </div>
   )
 }

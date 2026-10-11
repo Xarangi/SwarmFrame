@@ -77,6 +77,10 @@ def main(argv: list[str] | None = None) -> None:
     an.add_argument("--effort", default="low")
     an.add_argument("--words", default=None, help="target length for Claude, e.g. 2500-3000")
     an.add_argument("--title", default="")
+    an.add_argument("--investigators", type=int, default=4,
+                    help="Claude: stretches of time read in parallel, plus one reading across (0: rounds instead)")
+    an.add_argument("--parallel", type=int, default=5, help="Claude: at most this many investigators at once")
+    an.add_argument("--rounds", type=int, default=3, help="Claude, with --investigators 0: rounds of investigation")
     an.add_argument("--detect", action="store_true", help="only show what is in the dump (structure only)")
     an.add_argument("--team", default="composed", help="composed (default), auto, or a preset id (lead, desks, ...)")
     an.add_argument("--compare", nargs="+", default=None, help="read the dump with several teams and compare them")
@@ -117,6 +121,7 @@ def main(argv: list[str] | None = None) -> None:
             opts["search"] = True
         if a.source:
             opts["source"] = a.source
+        opts["investigators"], opts["rounds"], opts["parallel"] = a.investigators, a.rounds, a.parallel
         if a.words:
             lo, hi = a.words.split("-")
             opts["words"] = [int(lo), int(hi)]

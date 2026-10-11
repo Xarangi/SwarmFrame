@@ -20,7 +20,7 @@ export function Evaluate() {
   const rows = res?.results ?? []
   return (
     <div className="fade-in">
-      <div className="page-title">Evaluate monitoring strategies</div>
+      <div className="display" style={{ fontSize: 22, marginBottom: 6 }}>Score monitoring strategies on planted ground truth</div>
       <div className="muted" style={{ marginBottom: 18, maxWidth: 780 }}>
         SwarmFrame is a test bed: each baseline is just another organization config. Runs replay the synthetic AI Village corpus,
         which has planted ground truth (convergence, propagation with and without exposure, a false completion report, an operator

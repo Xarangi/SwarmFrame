@@ -379,7 +379,8 @@ async def _run(job: Job) -> None:
             from swarmscope.analysis.writer import write_report
             res = await write_report(job.engine, job.report, model=o.get("model", "claude-sonnet-5-5"), effort=o.get("effort", "low"),
                                      words=o.get("words"), max_turns=int(o.get("max_turns", 40)),
-                                     rounds=int(o.get("rounds", 3)))
+                                     rounds=int(o.get("rounds", 3)), investigators=int(o.get("investigators", 4)),
+                                     parallel=int(o.get("parallel", 5)))
             job.written, job.writer = res["markdown"], {k: v for k, v in res.items() if k != "markdown"}
         _save(job)
         job.status, job.progress, job.message = "done", 1.0, "done"

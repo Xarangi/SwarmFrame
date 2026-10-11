@@ -171,8 +171,8 @@ function Msg({ m }: { m: ChatMsg }) {
           {o.pages.length > 0 && <>I built {o.pages.map((p: any) => p.title).join(', ')} beside the Brief. </>}
           The {o.team.title} team reads it, with {o.reader}. I will post a line here every window and flag findings, with sources, as they appear.
         </div>
-        <details className="answer-sources" open>
-          <summary className="mono">how to study it</summary>
+        <details className="answer-sources">
+          <summary className="mono">how to study it{o.questions?.length ? ` · ${o.questions.length} good first questions` : ''}</summary>
           <StudyGuide o={o} compact />
         </details>
       </div>

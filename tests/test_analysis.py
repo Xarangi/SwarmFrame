@@ -146,3 +146,26 @@ def test_strategies_compared_and_searched_on_one_dump(tmp_path, monkeypatch):
     assert job.status == "done", job.error
     assert job.search and len(job.search["trials"]) == 5 and job.search["picked"]
     assert len(job.runs) == 1 and "picked by the search" in job.runs[0].label
+
+
+def test_writer_stretches_and_window_tool():
+    """The parallel writer cuts the record into stretches of about equal size, and each investigator starts from the
+    window tool's counts for its stretch."""
+    from swarmscope.analysis.writer import phases
+    from swarmscope.engine import Engine
+    e = Engine("swarm_scale", "default", slice_override={"agents": 60, "hours": 6}, overrides={"llm.mode": "stub"})
+
+    async def read():
+        while (w := e.clock.next_window()) is not None:
+            await e.process(w)
+    asyncio.run(read())
+    ps = phases(e, 4)
+    assert len(ps) == 4 and all(a < b for a, b in ps) and all(ps[i][1] == ps[i + 1][0] for i in range(3))
+    tools = e.tools("analyst")
+    sizes = [tools.window(a, b)["records"] for a, b in ps]
+    assert sum(sizes) == e.store.count_events()
+    assert max(sizes) <= 2 * min(sizes)                  # about equal stretches
+    w = tools.window(*ps[0])
+    assert w["actors"] and w["resources"] and w["by_action"] and "text" not in str(w).lower()[:0]
+    _, names = tools.mcp_server()
+    assert "mcp__evidence__window" in names

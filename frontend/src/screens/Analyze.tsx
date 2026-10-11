@@ -3,7 +3,7 @@ import { get, post } from '../api'
 import { useStore } from '../store'
 import { Icon } from '../components/ui'
 import { prettyModel, type LlmOptions } from '../components/ReadingSetup'
-import { markComposed } from './Compose'
+import { markComposed, ModeSwitch } from './Compose'
 
 /** Post-analysis: a dump in, a report out. A side mode beside live monitoring: point at a folder or drop files,
  *  check what SwarmFrame found in them, and read the whole record at once. The report cites record ids; open the
@@ -43,6 +43,7 @@ export function Analyze() {
   const [preview, setPreview] = useState<Composition | null>(null)
   const [previewing, setPreviewing] = useState(false)
   const [fix, setFix] = useState(false)
+  const [setup, setSetup] = useState(false)
   const [job, setJob] = useState<Job | null>(null)
   const [recent, setRecent] = useState<Job[]>([])
   const pick = useRef<HTMLInputElement>(null)
@@ -94,9 +95,11 @@ export function Analyze() {
 
   return (
     <div className="analyze fade-in">
-      <div className="label" style={{ marginBottom: 6 }}>Post-analysis</div>
-      <h1 className="compose-title" style={{ fontSize: 'calc(38px * var(--headline))' }}>Analyze a dump</h1>
-      <p className="compose-lede">Point SwarmFrame at logs you already have. It reads the whole record at once with the same watchers and analysts as live monitoring, then writes a report where every claim names the records behind it.</p>
+      <section className="compose-hero plain">
+        <h1 className="compose-title">What should we read?</h1>
+        <p className="compose-lede">Point SwarmFrame at logs you already have. It reads the whole record at once with the same watchers and analysts as live monitoring, then writes a report where every claim names the records behind it.</p>
+        <ModeSwitch on="analyze" />
+      </section>
 
       {job ? (
         <section className="surface" style={{ marginTop: 22, padding: 18 }}>
@@ -131,91 +134,115 @@ export function Analyze() {
           </section>
           {err && <div className="theme-error" style={{ marginTop: 10 }}>{err}</div>}
 
-          {det && (
-            <section className="surface" style={{ marginTop: 16, padding: 18 }}>
-              <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <b>{det.known ? `${det.known_title}: read with its own reader` : `${det.files.filter((f) => maps[f.file]?.ts).length} of ${det.files.length} files can be read as events`}</b>
-                <span className="mono muted">{det.rows.toLocaleString()} rows</span>
-              </div>
-              <div className="detected" style={{ marginTop: 10 }}>
-                {det.files.map((f) => (
-                  <div key={f.file} className="detected-file">
-                    <span style={{ overflowWrap: 'anywhere' }}>{f.file}</span>
-                    <span className="mono muted">{f.rows.toLocaleString()}{f.rows_capped ? '+' : ''} rows</span>
-                    <span className="map-chips">
-                      {f.error ? <span className="theme-error">{f.error}</span>
-                        : det.known ? <span className="muted" style={{ fontSize: 12.5 }}>{(f.fields ?? []).slice(0, 8).join(', ')}{(f.fields ?? []).length > 8 ? '…' : ''}</span>
-                        : maps[f.file]?.ts ? (Object.keys(ROLE_LABEL) as Role[]).filter((r) => maps[f.file]?.[r]).map((r) => <span key={r} className="map-chip">{ROLE_LABEL[r]}: <b>{maps[f.file][r]}</b></span>)
-                        : <span className="muted" style={{ fontSize: 12.5 }}>no time field found, so not read as events</span>}
-                    </span>
+          {det && (() => {
+            const used = det.files.filter((f) => det.known || maps[f.file]?.ts)
+            const skipped = det.files.filter((f) => !det.known && !maps[f.file]?.ts)
+            const teamLine = how === 'compose' ? `Composed for this data${composer === 'claude' ? ' by Claude' : ''}` : how === 'search' ? 'Search: 5 teams try the first 30%, the best reads it all'
+              : how === 'compare' ? `Compare ${cmp.length} teams on the whole record` : teamName(preset)
+            const writerLine = writer === 'rules' ? 'Report from the rules · free' : `Report written by ${prettyModel(model)} · ${effort} effort`
+            return (
+            <>
+              <section className="surface record-card">
+                <div className="record-line">
+                  <span className="record-icon"><Icon name="check" size={15} /></span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="record-title">{det.known ? `${det.known_title}, read with its own reader` : `${det.rows.toLocaleString()} rows in ${used.length} ${used.length === 1 ? 'file' : 'files'} can be read as events`}</div>
+                    <div className="muted record-sub">{used.map((f) => f.file).join(', ')}{skipped.length ? ` · skipped ${skipped.map((f) => f.file).join(', ')} (no time field)` : ''}</div>
                   </div>
-                ))}
-              </div>
-              {!det.known && <button className="link" style={{ marginTop: 10 }} onClick={() => setFix(!fix)}>{fix ? 'Done' : 'Fix the mapping'}</button>}
-              {fix && !det.known && <MappingEditor files={det.files} maps={maps} setMaps={setMaps} />}
-
-              <div style={{ marginTop: 18 }}>
-                <div className="setup-h"><span className="label">The analyst team</span><span className="muted">who reads the record, and how it is chosen</span></div>
-                <div className="mode-pick" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-                  {([['compose', 'Compose one', 'Assembled for this data from parts, each switched on by what the records show.'],
-                    ['search', 'Search', 'Try several teams on the first 30% of the record, then read it all with the best.'],
-                    ['compare', 'Compare', 'Read the whole record with several teams and compare what each found.'],
-                    ['preset', 'A preset', 'One of the library teams, as it is.']] as const).map(([k, t, b]) => (
-                    <button key={k} className={`mode-opt ${how === k ? 'on' : ''}`} onClick={() => setHow(k)}>
-                      <span className="mode-top"><span className="mode-dot" />{t}</span><span className="mode-body">{b}</span>
-                    </button>))}
+                  {!det.known && <button className="link" onClick={() => setFix(!fix)} aria-expanded={fix}>{fix ? 'Done' : 'Check how it was read'}</button>}
                 </div>
-                {how === 'compose' && (
-                  <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                    <div className="seg sm"><button className={composer === 'rules' ? 'on' : ''} onClick={() => setComposer('rules')}>Composed by rules</button>
-                      <button className={composer === 'claude' ? 'on' : ''} disabled={!claudeOk} onClick={() => setComposer('claude')}>Composed by Claude</button></div>
-                    <button className="link" onClick={previewTeam} disabled={previewing}>{previewing ? 'Composing…' : 'Preview the team'}</button>
+                {fix && !det.known && (
+                  <div className="detected" style={{ marginTop: 12 }}>
+                    {det.files.map((f) => (
+                      <div key={f.file} className="detected-file">
+                        <span style={{ overflowWrap: 'anywhere' }}>{f.file}</span>
+                        <span className="mono muted">{f.rows.toLocaleString()}{f.rows_capped ? '+' : ''} rows</span>
+                        <span className="map-chips">
+                          {f.error ? <span className="theme-error">{f.error}</span>
+                            : maps[f.file]?.ts ? (Object.keys(ROLE_LABEL) as Role[]).filter((r) => maps[f.file]?.[r]).map((r) => <span key={r} className="map-chip">{ROLE_LABEL[r]}: <b>{maps[f.file][r]}</b></span>)
+                            : <span className="muted" style={{ fontSize: 12.5 }}>no time field found, so not read as events</span>}
+                        </span>
+                      </div>
+                    ))}
+                    <MappingEditor files={det.files} maps={maps} setMaps={setMaps} />
                   </div>
                 )}
-                {how === 'preset' && (
-                  <select className="input" style={{ maxWidth: 360, marginTop: 10 }} value={preset} onChange={(e) => setPreset(e.target.value)}>
-                    {teams.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-                  </select>
-                )}
-                {how === 'compare' && (
-                  <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-                    {['composed', 'auto', ...teams.map((t) => t.id)].map((id) => (
-                      <label key={id} className="map-chip" style={{ cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 12.5 }}>
-                        <input type="checkbox" checked={cmp.includes(id)} onChange={(e) => setCmp(e.target.checked ? [...cmp, id].slice(0, 6) : cmp.filter((x) => x !== id))} /> {teamName(id)}
-                      </label>))}
-                    <span className="muted" style={{ fontSize: 12 }}>up to six; each reads the whole record</span>
-                  </div>
-                )}
-                {preview && how === 'compose' && <TeamCard c={preview} />}
-              </div>
+              </section>
 
-              <div style={{ marginTop: 18 }}>
-                <div className="setup-h"><span className="label">Who writes the report</span></div>
-                <div className="mode-pick two">
-                  <button className={`mode-opt ${writer === 'rules' ? 'on' : ''}`} onClick={() => setWriter('rules')}>
-                    <span className="mode-top"><span className="mode-dot" />Rules<span className="mode-cost">free · seconds</span></span>
-                    <span className="mode-body">Counts, timing, groups and what the detectors raised, each with its records. Nothing leaves this machine.</span>
-                  </button>
-                  <button className={`mode-opt ${writer === 'claude' ? 'on' : ''}`} disabled={!claudeOk} onClick={() => setWriter('claude')}>
-                    <span className="mode-top"><span className="mode-dot" />Claude<span className="mode-cost">model calls</span></span>
-                    <span className="mode-body">{claudeOk ? 'Starts from the rules reading, checks and deepens it with the evidence tools, and writes it up with a confidence for each conclusion.' : 'Needs the Claude Code CLI on this machine.'}</span>
-                  </button>
+              <section className="surface runbar">
+                <div className="run-summary">
+                  <span className="label" style={{ marginRight: 4 }}>How it reads</span>
+                  <span className="pill">{teamLine}</span>
+                  <span className="pill">{writerLine}</span>
+                  <button className="link" onClick={() => setSetup(!setup)} aria-expanded={setup}>{setup ? 'Done' : 'Change'}</button>
                 </div>
-                {writer === 'claude' && opts && (
-                  <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                    <select className="input" style={{ maxWidth: 320 }} value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model">
-                      {opts.models.map((m) => <option key={m.id} value={m.id}>{m.label} · {m.note}</option>)}
-                    </select>
-                    <div className="seg sm">{opts.efforts.map((x) => <button key={x} className={effort === x ? 'on' : ''} onClick={() => setEffort(x)}>{x} effort</button>)}</div>
+                {setup && (
+                  <div className="setup">
+                    <div>
+                      <div className="setup-h"><span className="label">The analyst team</span><span className="muted">who reads the record</span></div>
+                      <div className="mode-pick four">
+                        {([['compose', 'Compose one', 'Assembled for this data: readers and specialists switched on by what the records show.'],
+                          ['search', 'Search', 'Five teams try the first 30% of the record; the best reads all of it.'],
+                          ['compare', 'Compare', 'Several teams each read the whole record, side by side.'],
+                          ['preset', 'A preset', 'One of the library teams, as it is.']] as const).map(([k, t, b]) => (
+                          <button key={k} className={`mode-opt ${how === k ? 'on' : ''}`} onClick={() => setHow(k)}>
+                            <span className="mode-top"><span className="mode-dot" />{t}</span><span className="mode-body">{b}</span>
+                          </button>))}
+                      </div>
+                      {how === 'compose' && (
+                        <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                          <div className="seg sm"><button className={composer === 'rules' ? 'on' : ''} onClick={() => setComposer('rules')}>Composed by rules</button>
+                            <button className={composer === 'claude' ? 'on' : ''} disabled={!claudeOk} onClick={() => setComposer('claude')}>Composed by Claude</button></div>
+                          <button className="link" onClick={previewTeam} disabled={previewing}>{previewing ? 'Composing…' : preview ? 'Compose again' : 'Preview the team'}</button>
+                        </div>
+                      )}
+                      {how === 'preset' && (
+                        <select className="input" style={{ maxWidth: 360, marginTop: 10 }} value={preset} onChange={(e) => setPreset(e.target.value)}>
+                          {teams.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+                        </select>
+                      )}
+                      {how === 'compare' && (
+                        <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                          {['composed', 'auto', ...teams.map((t) => t.id)].map((id) => (
+                            <label key={id} className={`check-chip ${cmp.includes(id) ? 'on' : ''}`}>
+                              <input type="checkbox" checked={cmp.includes(id)} onChange={(e) => setCmp(e.target.checked ? [...cmp, id].slice(0, 6) : cmp.filter((x) => x !== id))} /> {teamName(id)}
+                            </label>))}
+                          <span className="muted" style={{ fontSize: 12 }}>up to six</span>
+                        </div>
+                      )}
+                      {preview && how === 'compose' && <TeamCard c={preview} />}
+                    </div>
+                    <div>
+                      <div className="setup-h"><span className="label">Who writes the report</span></div>
+                      <div className="mode-pick two">
+                        <button className={`mode-opt ${writer === 'rules' ? 'on' : ''}`} onClick={() => setWriter('rules')}>
+                          <span className="mode-top"><span className="mode-dot" />Rules<span className="mode-cost">free · seconds</span></span>
+                          <span className="mode-body">Counts, timing, groups and what the detectors raised, each with its records. Nothing leaves this machine.</span>
+                        </button>
+                        <button className={`mode-opt ${writer === 'claude' ? 'on' : ''}`} disabled={!claudeOk} onClick={() => setWriter('claude')}>
+                          <span className="mode-top"><span className="mode-dot" />Claude<span className="mode-cost">model calls</span></span>
+                          <span className="mode-body">{claudeOk ? 'Investigates the record with the evidence tools, then writes it up with a confidence for each conclusion.' : 'Needs the Claude Code CLI on this machine.'}</span>
+                        </button>
+                      </div>
+                      {writer === 'claude' && opts && (
+                        <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                          <select className="input" style={{ maxWidth: 320 }} value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model">
+                            {opts.models.map((m) => <option key={m.id} value={m.id}>{m.label} · {m.note}</option>)}
+                          </select>
+                          <div className="seg sm">{opts.efforts.map((x) => <button key={x} className={effort === x ? 'on' : ''} onClick={() => setEffort(x)}>{x} effort</button>)}</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-              </div>
-              <div className="run-actions" style={{ marginTop: 16 }}>
-                <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title for the report (optional)" aria-label="Report title" />
-                <button className="btn accent lg" disabled={!det.usable && !Object.values(maps).some((m) => m.ts)} onClick={run}>Analyze <Icon name="arrow" size={15} /></button>
-              </div>
-            </section>
-          )}
+                <div className="run-actions">
+                  <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title for the report (optional)" aria-label="Report title" />
+                  <button className="btn accent lg" disabled={(!det.usable && !Object.values(maps).some((m) => m.ts)) || (how === 'compare' && cmp.length < 2)} onClick={run}>Analyze <Icon name="arrow" size={15} /></button>
+                </div>
+              </section>
+            </>
+            )
+          })()}
 
           {recent.filter((j) => j.has_report).length > 0 && (
             <section style={{ marginTop: 26 }}>
@@ -263,6 +290,8 @@ function ReportView({ job, onBack }: { job: Job; onBack: () => void }) {
   const [tab, setTab] = useState<'claude' | 'rules'>(job.written ? 'claude' : 'rules')
   const [runIx, setRunIx] = useState(job.main ?? 0)
   const [opening, setOpening] = useState(false)
+  const [view, setView] = useState<'report' | 'teams' | 'team'>('report')
+  const team = job.runs?.[runIx]?.team?.composition
   const md = tab === 'claude' ? job.written ?? '' : (job.run_markdown?.[runIx] ?? job.markdown ?? '')
   const openDash = async (then?: () => void) => {
     setOpening(true)
@@ -289,21 +318,31 @@ function ReportView({ job, onBack }: { job: Job; onBack: () => void }) {
         <button className="btn" onClick={() => navigator.clipboard?.writeText(md)}>Copy</button>
         <button className="btn primary" disabled={opening} onClick={() => openDash()}>{opening ? 'Opening…' : 'Explore in the dashboard'} <Icon name="arrow" size={14} /></button>
       </div>
-      {job.written && (
-        <div className="seg report-tabs">
-          <button className={tab === 'claude' ? 'on' : ''} onClick={() => setTab('claude')}>Written by {job.writer ? prettyModel(job.writer.model) : 'Claude'}</button>
-          <button className={tab === 'rules' ? 'on' : ''} onClick={() => setTab('rules')}>The rules reading</button>
+      <div className="report-bar">
+        <div className="studio-tabs flush">
+          <button className={view === 'report' ? 'on' : ''} onClick={() => setView('report')}>Report</button>
+          {(job.search || job.comparison) && <button className={view === 'teams' ? 'on' : ''} onClick={() => setView('teams')}>{job.search ? 'The search' : `Teams compared (${job.comparison!.rows.length})`}</button>}
+          {team && <button className={view === 'team' ? 'on' : ''} onClick={() => setView('team')}>Who read it</button>}
         </div>
-      )}
-      {job.search && <StrategyTable title="The search" note={job.search.note} rows={job.search.trials} picked={job.search.picked} scored />}
-      {job.comparison && <StrategyTable title="The teams compared" note={job.comparison.note + ` ${job.comparison.consensus_size} findings were raised by most of the teams.`} rows={job.comparison.rows} picked={job.comparison.best}
-        onPick={(label) => { const i = (job.runs ?? []).findIndex((r) => r.label === label); if (i >= 0) { setRunIx(i); setTab('rules') } }} current={(job.runs ?? [])[runIx]?.label} />}
-      {job.runs?.[runIx]?.team?.composition && !job.comparison && <TeamCard c={job.runs[runIx].team.composition!} />}
-      <div className="mono muted" style={{ fontSize: 11, marginBottom: 10 }}>
+        {view === 'report' && job.written && (
+          <div className="seg sm">
+            <button className={tab === 'claude' ? 'on' : ''} onClick={() => setTab('claude')}>Written by {job.writer ? prettyModel(job.writer.model) : 'Claude'}</button>
+            <button className={tab === 'rules' ? 'on' : ''} onClick={() => setTab('rules')}>The rules reading</button>
+          </div>
+        )}
+      </div>
+      {view === 'teams' && job.search && <StrategyTable title="The search" note={job.search.note} rows={job.search.trials} picked={job.search.picked} scored />}
+      {view === 'teams' && job.comparison && <StrategyTable title="The teams compared" note={job.comparison.note + ` ${job.comparison.consensus_size} findings were raised by most of the teams.`} rows={job.comparison.rows} picked={job.comparison.best}
+        onPick={(label) => { const i = (job.runs ?? []).findIndex((r) => r.label === label); if (i >= 0) { setRunIx(i); setTab('rules'); setView('report') } }} current={(job.runs ?? [])[runIx]?.label} />}
+      {view === 'team' && team && <TeamCard c={team} />}
+      {view === 'report' && <>
+      <div className="mono muted report-meta">
+        {(job.runs?.length ?? 0) > 1 && <span>{job.runs![runIx]?.label} · </span>}
         {(tab === 'claude' ? job.written_words : job.words).toLocaleString()} words · read in {job.seconds.toFixed(0)} s
         {tab === 'claude' && job.writer ? ` · ${job.writer.tool_calls} evidence lookups · about $${job.writer.cost_usd.toFixed(2)}` : ''} · click a record id to open it
       </div>
       <article className="surface report-doc"><Markdown text={md} onRecord={openRecord} /></article>
+      </>}
     </div>
   )
 }

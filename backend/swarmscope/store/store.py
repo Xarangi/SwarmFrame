@@ -8,6 +8,7 @@ write-through JSON table, so they are replayable and inspectable.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from collections import defaultdict
 from datetime import datetime
@@ -54,6 +55,15 @@ class Store:
         if path:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.con = duckdb.connect(self.path)
+        # bounded memory: past the limit DuckDB spills to disk instead of failing (long records, busy machines)
+        tmp = Path(os.environ.get("SWARMSCOPE_DB_TMP") or Path(__file__).resolve().parents[3] / "data" / "cache" / "duckdb_tmp")
+        try:
+            tmp.mkdir(parents=True, exist_ok=True)
+            self.con.execute(f"SET temp_directory = '{tmp.as_posix()}'")
+            self.con.execute(f"SET memory_limit = '{os.environ.get('SWARMSCOPE_DB_MEMORY', '1500MB')}'")
+            self.con.execute(f"SET threads = {int(os.environ.get('SWARMSCOPE_DB_THREADS', min(4, os.cpu_count() or 4)))}")
+        except Exception:
+            pass
         self.con.execute(SCHEMA)
         self._lock = threading.RLock()
         self._docs: dict[str, dict[str, BaseModel]] = defaultdict(dict)

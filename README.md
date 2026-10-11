@@ -41,7 +41,7 @@ The recorded sources need their data first (see [Getting the recorded data](#get
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/01-start-dark.png">
-  <img alt="The start screen: four steps, then the data sources" src="docs/screenshots/01-start-light.png">
+  <img alt="The start screen: watch a swarm or analyze a dump, then the data sources" src="docs/screenshots/01-start-light.png">
 </picture>
 
 1. **You pick the data.** Link a live stream, or open one of the recorded sources.
@@ -127,13 +127,13 @@ board, Transluce, the generic stream) are working examples, and the [technical r
 
 ## Analyze a dump
 
-Not everything is live. If you already have logs, **Analyze a dump** (on the start screen and in the rail) reads them
+Not everything is live. If you already have logs, switch the start screen to **Analyze a dump** (the rail's **New** opens it) and it reads them
 after the fact and writes a report.
 
 1. Point it at a folder or file on your computer, or drop files in the browser. JSON, JSON lines and CSV work,
    gzipped or zipped. No dump at hand? Use the sample.
 2. SwarmFrame shows what it found in each file and which field it takes as the time, who acted, what they did, what
-   they acted on, their group and their text. Fix the mapping if a guess is wrong. Folders it knows (the
+   they acted on, their group and their text; **Check how it was read** fixes a wrong guess. Folders it knows (the
    collusion.wiki export, the Transluce catalog, the AI Village export) are read with their own reader.
 3. It reads the whole record at once, through the same watchers and analysts as live monitoring, and writes a report:
    a TL;DR, a timeline, then the analysis, with record ids behind every claim. Rules write it for free in seconds; or

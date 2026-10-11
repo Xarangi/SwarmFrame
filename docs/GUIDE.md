@@ -58,8 +58,8 @@ column's question box. A source set up before reuses its pages and World; **Reco
 </picture>
 
 The Brief is the home page. The rail on the left holds everything else: **Findings**, the **World**,
-**Investigations**, then the pages built for this source, and at the bottom **Under the hood**, **Settings**,
-**New source** and **Analyze a dump**.
+**Investigations**, then the pages built for this source, and at the bottom **Under the hood**, **Settings** and
+**New** (watch another swarm, or analyze a dump).
 
 - **The status line** says how many agents are active and what most of the work is.
 - **The attention line** says whether anything needs a decision.
@@ -185,25 +185,32 @@ currently believes, and what it has cost. Any of these can be put on a page from
   <img alt="Analyze a dump: what was found in each file and how it will be read" src="screenshots/13-analyze-light.png">
 </picture>
 
-For logs you already have, **Analyze a dump** reads them after the fact. Point it at a folder or a file, drop files
-in, or use the sample. It shows what it found in each file and which field it takes as the time, who acted, what
-they did, what they acted on, their group and their text; **Fix the mapping** corrects a guess. Choose who writes the
-analyst team: **Compose one** for this data (Preview the team shows each part and why it is there), **Search**
-(several teams try the first 30% of the record and the best reads it all), **Compare** (several teams each read the
-whole record, side by side) or **A preset**. Then choose who writes the report: **Rules** (free, seconds) or **Claude**, which starts from the rules reading, investigates in rounds with the
-evidence tools (reading what was written, searching the text, following text that spread) and writes it up.
+For logs you already have, switch the start screen to **Analyze a dump**. Point it at a folder or a file, drop
+files in, or use the sample. It says in one line what it can read as events (and what it skipped); **Check how it
+was read** shows which field it takes as the time, who acted, what they did, what they acted on, their group and
+their text, and lets you correct a guess.
+
+**How it reads** sums up the choices in one line; **Change** opens them:
+
+- **The analyst team.** **Compose one** for this data (Preview the team shows each part and why it is there),
+  **Search** (five teams try the first 30% of the record and the best reads it all), **Compare** (several teams each
+  read the whole record, side by side) or **A preset**.
+- **Who writes the report.** **Rules** (free, seconds) or **Claude**: several investigators each read one stretch
+  of the record in parallel and one reads across all of it, with the evidence tools (what was written, who worked
+  where, what spread), then a writer turns their notes into the report.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="screenshots/14-report-dark.png">
   <img alt="The report: a TL;DR, a timeline tied to record ids, then the analysis" src="screenshots/14-report-light.png">
 </picture>
 
-After a search or a comparison the report opens with a table of the teams: what each found, how much of it most
-teams agree on, how much of the record each read closely, its supported claims, agents and time; **show report**
-switches to that team's report. The report has a TL;DR, a timeline in which every line names its records, then the
-analysis. Click a record id to
-open it. **Download .md** saves it; **Explore in the dashboard** opens the whole analysis with every page, the World
-and the evidence drawer. The same thing from the command line: `swarmframe analyze path/to/logs --out report.md`.
+The report opens first: a TL;DR, a timeline in which every line names its records, then the analysis. Click a
+record id to open it. After a search or a comparison, **The search** or **Teams compared** shows each team: what it
+found, how much of that most teams agree on, how much of the record it read closely, its supported claims, agents
+and time, with **show report** to read that team's report. **Who read it** lists the team's parts and why each was
+there. **Download .md** saves the report; **Explore in the dashboard** opens the whole analysis with every page, the
+World and the evidence drawer. The same thing from the command line: `swarmframe analyze path/to/logs --out
+report.md`.
 
 ## Where to go next
 

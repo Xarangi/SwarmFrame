@@ -191,6 +191,38 @@ class EvidenceTools:
         return [{"event": r["id"], "ts": str(r["ts"])[:16], "actor": self._label(r["actor"]), "action": r["action"],
                  "artifact": r["artifact"]} for r in rows]
 
+    def window(self, since: str, until: str, top: int = 12) -> dict[str, Any]:
+        """What happened in one time window, as counts: records by action, the busiest actors and resources, actors
+        seen for the first time, resources that got the most distinct actors, and the busiest days. No text."""
+        h = self.horizon().replace(tzinfo=None)
+        a = datetime.fromisoformat(since).replace(tzinfo=None)
+        b = min(datetime.fromisoformat(until).replace(tzinfo=None), h)
+        k = max(3, min(int(top), 30))
+        q = lambda sql, extra=(): self.store.sql(sql, [a, b, *extra])          # noqa: E731
+        w = "FROM events WHERE ts >= ? AND ts < ?"
+        total = q(f"SELECT count(*) AS records, count(DISTINCT actor) AS distinct_actors, count(DISTINCT object) AS distinct_resources {w}")[0]
+        out: dict[str, Any] = {"since": str(a)[:16], "until": str(b)[:16], **total}
+        out["by_action"] = {r["action"]: r["n"] for r in q(f"SELECT action, count(*) AS n {w} GROUP BY 1 ORDER BY 2 DESC LIMIT 20")}
+        out["actors"] = [{"actor": self._label(r["actor"]), "id": r["actor"], "records": r["n"], "resources": r["o"],
+                          "first": str(r["f"])[:16], "last": str(r["l"])[:16]}
+                         for r in q(f"SELECT actor, count(*) AS n, count(DISTINCT object) AS o, min(ts) AS f, max(ts) AS l {w} "
+                                    f"AND actor IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT {k}")]
+        out["resources"] = [{"resource": self._label(r["object"]), "id": r["object"], "records": r["n"], "actors": r["a"],
+                             "actions": r["acts"]}
+                            for r in q(f"SELECT object, count(*) AS n, count(DISTINCT actor) AS a, string_agg(DISTINCT action, ',') AS acts {w} "
+                                       f"AND object IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT {k}")]
+        out["contested"] = [{"resource": self._label(r["object"]), "id": r["object"], "actors": r["a"], "records": r["n"]}
+                            for r in q(f"SELECT object, count(DISTINCT actor) AS a, count(*) AS n {w} AND object IS NOT NULL "
+                                       f"GROUP BY 1 HAVING count(DISTINCT actor) > 1 ORDER BY 2 DESC, 3 DESC LIMIT {k}")]
+        out["newcomers"] = [{"actor": self._label(r["actor"]), "id": r["actor"], "first": str(r["f"])[:16], "records": r["n"]}
+                            for r in self.store.sql(
+                                "SELECT actor, min(ts) AS f, count(*) AS n FROM events WHERE actor IS NOT NULL GROUP BY 1 "
+                                f"HAVING min(ts) >= ? AND min(ts) < ? ORDER BY 3 DESC LIMIT {k}", [a, b])]
+        out["days"] = [{"day": str(r["d"])[:10], "records": r["n"]}
+                       for r in q(f"SELECT date_trunc('day', ts) AS d, count(*) AS n {w} GROUP BY 1 ORDER BY 2 DESC LIMIT 8")]
+        self._log("window", {"since": since, "until": until}, out.get("records", 0))
+        return out
+
     def observations(self, kind: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
         """Watcher observations (deterministic detectors) visible at the horizon, within scope."""
         h = self.horizon()
@@ -377,6 +409,10 @@ class EvidenceTools:
             ("sample_events", "Uniform random sample of events in scope.",
              {"type": "object", "properties": {"n": I, "family": S, "hours": {"type": "number"}}}, self.sample_events),
         ]
+        specs.append(("window", "What happened between two ISO times, as counts: records by action, the busiest actors and "
+                                "resources, resources several actors worked on, actors first seen there, busiest days.",
+                      {"type": "object", "properties": {"since": S, "until": S, "top": {"type": "integer"}}, "required": ["since", "until"]},
+                      self.window))
         specs.append(("history", "Everything that happened to one resource (page, file, room) in order, with artifact ids "
                                "of the text written, to read with read_raw.",
                       {"type": "object", "properties": {"object": S, "limit": {"type": "integer"}}, "required": ["object"]},

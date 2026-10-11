@@ -342,13 +342,19 @@ A side mode beside live monitoring: a folder or file of logs in, a report with s
   responded, what stands out (each detection with its innocent reading and a confidence), what the analysts flagged,
   and how it was read. Built from structure only.
 - **Claude's write-up** (`analysis/writer.py`, optional) starts from that reading and investigates with the evidence
-  tools, including `history` (everything that happened to one resource), `search_text` and `read_raw` (agent text,
-  wrapped as untrusted), then writes the report with confidence levels and record ids.
+  tools, including `window` (what happened between two times, as counts), `history` (everything that happened to one
+  resource), `search_text` and `read_raw` (agent text, wrapped as untrusted), then writes the report with confidence
+  levels and record ids. By default the record is cut into stretches with about the same number of records
+  (`investigators`, default 4); one investigator reads each stretch and one reads across the whole record (identities,
+  coordination, spread, moderation, beginning and end), all in parallel, each starting from its stretch's counts.
+  A writer then turns their notes, labelled by stretch, into the report. `investigators: 0` investigates in
+  `rounds` instead (each round a fresh session that gets the notes so far).
 - **Exploring.** "Explore in the dashboard" opens the finished engine as the session, paused at the end of the
   record; clicking a record id in the report opens it in the evidence drawer.
 - **API:** `POST /api/analysis/detect {path}`, `POST /api/analysis/upload` (files), `POST /api/analysis/sample`,
   `POST /api/analysis/start {path, options}`, `GET /api/analysis/{id}`, `POST /api/analysis/{id}/open`.
-- **CLI:** `swarmframe analyze <path> --out report.md [--source german_wiki] [--write claude --model ... --words 2500-3000]`,
+- **CLI:** `swarmframe analyze <path> --out report.md [--source german_wiki] [--write claude --model ... --words 2500-3000
+  --investigators 4]`,
   `swarmframe analyze <path> --detect` (structure only). Reports are also kept under `data/reports/`.
 
 ### Strategies: which team reads the dump

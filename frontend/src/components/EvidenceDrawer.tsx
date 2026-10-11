@@ -216,10 +216,12 @@ function FindingView({ f }: { f: any }) {
         {inv && <button className="btn primary" onClick={() => select(inv.id)}>{inv.status === 'running' || inv.status === 'open' ? 'Open the investigation' : 'Read the investigation'} <Icon name="arrow" size={13} /></button>}
         {(!inv || (inv.status !== 'running' && inv.status !== 'open')) && <button className="btn" onClick={() => act('investigate')}><Icon name="investigations" size={14} />Investigate</button>}
         <button className="btn" onClick={() => useStore.getState().showInWorld(f.scope)}><Icon name="globe" size={14} />Show me in the World</button>
-        <button className="btn" onClick={() => act('watch')}><Icon name="attention" size={14} />Watch more closely</button>
-        <button className="btn ghost" onClick={() => act(f.pinned ? 'unpin' : 'pin')}><Icon name="pin" size={14} />{f.pinned ? 'Unpin' : 'Pin'}</button>
-        <button className="btn ghost" onClick={() => act('snooze')}><Icon name="snooze" size={14} />Snooze</button>
-        <button className="btn ghost danger" onClick={() => act('dismiss')}><Icon name="x" size={14} />{f.count > 1 ? `Dismiss all ${f.count}` : 'Dismiss'}</button>
+      </div>
+      <div className="quiet-actions">
+        <button className="btn sm ghost" onClick={() => act('watch')}><Icon name="attention" size={13} />Watch more closely</button>
+        <button className="btn sm ghost" onClick={() => act(f.pinned ? 'unpin' : 'pin')}><Icon name="pin" size={13} />{f.pinned ? 'Unpin' : 'Pin'}</button>
+        <button className="btn sm ghost" onClick={() => act('snooze')}><Icon name="snooze" size={13} />Snooze</button>
+        <button className="btn sm ghost danger" onClick={() => act('dismiss')}><Icon name="x" size={13} />{f.count > 1 ? `Dismiss all ${f.count}` : 'Dismiss'}</button>
       </div>
       {(f.needs_ack || f.acknowledged) && (
         <div className={`ack-inline ${f.overdue ? 'overdue' : ''}`}>

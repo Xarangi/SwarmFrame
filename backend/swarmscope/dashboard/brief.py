@@ -250,6 +250,10 @@ def catalog_summary(engine: "Engine", noun: str, rnoun: str) -> dict[str, Any] |
 
 def brief_digest(engine: "Engine") -> dict[str, Any]:
     out = _brief_digest(engine)
+    st = out.get("status") or ""
+    if not out.get("status_detail") and ". " in st:      # one sentence as the headline; the counts go underneath
+        head, rest = st.split(". ", 1)
+        out["status"], out["status_detail"] = head + ".", rest
     if (getattr(engine, "pack", None) is not None and engine.pack.source.get("catalog")):
         c = catalog_summary(engine, out["terms"]["agent"], out["terms"]["resource"])
         if c:

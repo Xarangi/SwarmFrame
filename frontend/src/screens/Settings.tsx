@@ -29,7 +29,7 @@ export function Settings({ s }: { s: Snapshot }) {
       <header className="page-head"><div><h1 className="page-title">Settings</h1>
         <p className="page-sub">{s.source.title} · {s.org.name}</p></div></header>
       <div className="studio-tabs flush">
-        {([['appearance', 'Look'], ['dashboard', 'Lenses and words'], ['monitoring', 'Monitoring and models'], ['compare', 'Compare strategies']] as [Tab, string][]).map(([k, l]) =>
+        {([['appearance', 'Look'], ['dashboard', 'Dashboard'], ['monitoring', 'Monitoring'], ['compare', 'Test bench']] as [Tab, string][]).map(([k, l]) =>
           <button key={k} className={tab === k ? 'on' : ''} onClick={() => { setTab(k); localStorage.setItem('ss.settingsTab', k) }}>{l}</button>)}
       </div>
       <div className="embedded" style={{ marginTop: 18 }}>
