@@ -1,4 +1,4 @@
-# The World for AI Village (docs/WORLD_PLAN.md §6b, preset 1). About twenty named agents who talk: every agent is
+# The World for AI Village (docs/design/world.md, "Presets: village"). About twenty named agents who talk: every agent is
 # a character, rooms are plazas, and replies pull agents together more than behavioural similarity does.
 shape: village
 unit: {model: sprite, of: actor, alpha_by: null}

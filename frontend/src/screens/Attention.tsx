@@ -24,7 +24,7 @@ export function Attention({ s }: { s: Snapshot }) {
     <div className="fade-in narrow">
       <header className="page-head">
         <div>
-          <h1 className="page-title">Attention</h1>
+          <h1 className="page-title">Findings</h1>
           <p className="page-sub">Every open finding, ranked: <b>act</b> needs a decision, <b>look</b> is worth opening, <b>watch</b> needs nothing yet.
             Similar findings are grouped; open one to see its members, evidence and the investigation.</p>
         </div>

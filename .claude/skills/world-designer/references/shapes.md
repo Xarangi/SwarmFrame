@@ -7,7 +7,7 @@ Read `world_features_available` and go down this list; stop at the first match; 
 |---|---|---|---|
 | `identity` absent, `resources` present | **targets** | Transluce | units are places (plinths); `landmarks_from: family` makes methods roads; drop roads and lay plinths by co-occurrence if there is no method-like family; `material ← grade` only if `grade` is observed |
 | `identity` absent, no resources | **stripped** | — | there is little to draw: activity over time only; say so in `open_questions` |
-| `identity_partial` present | **wiki** | German Wiki (planned) | sprites with `alpha_by: identity_confidence`; tethers for aliases; territories only if groups are observed or inferred; lineage arcs if artifacts |
+| `identity_partial` present | **wiki** | German Wiki | sprites with `alpha_by: identity_confidence`; tethers for aliases; territories only if groups are observed or inferred; lineage arcs if artifacts |
 | `control` observed | **swarm_control** | Claude Code | files as slabs, tools as colour, denials as `blocked`, beams for pauses and stops, control actions on click |
 | `messages` present and ≤ ~60 units | **village** | AI Village | every agent a character (`character_by: unit`); rooms as plazas; replies and rooms pull harder than similarity; a follow scene |
 | no `resources` | **stripped** | planted swarm minus landmarks | position from the behaviour signature alone (`landmark` and `interact` forces 0, `similar` high); legend lists what is unknown; ask the person which field holds the place an agent acts on |

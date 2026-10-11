@@ -1,4 +1,4 @@
-"""Choosing a team shape for a stream (docs/OVERSIGHT_ARCHITECTURES.md §6.1–6.2).
+"""Choosing a team shape for a stream (docs/design/analyst-teams.md, "The selector").
 
 Order of authority: a session override (`agents.topology`) > the source pack's `oversight.yaml` > the selector >
 the org config's default. The selector is deterministic and explained: it computes a *shape vector* from the stream
@@ -142,7 +142,11 @@ def choose_topology(engine: "Engine", explicit: str | dict[str, Any] | None = No
             c = compose(engine)
             t, by, reasons = c["topology"], "composer", [c["summary"]] + [f"{p['title']}: {p['reason']}" for p in c["parts"] if p["how"] != "off"]
             engine.composition = c
-        elif explicit:
+        elif explicit == "auto" and picked:              # asked for the selector's pick by name
+            t = build(picked["topology"], ov.get("overrides") if picked["topology"] in (ov.get("topology"), ov.get("preset")) else None,
+                      picked["partition"])
+            by, reasons = "selector", picked["reasons"]
+        elif explicit and explicit != "auto":
             tid = explicit if isinstance(explicit, str) else explicit.get("id", "custom")
             t = build(tid, ov.get("overrides") if tid in (ov.get("topology"), ov.get("preset")) else None) if isinstance(explicit, str) \
                 else from_dict(explicit, tid)
@@ -182,7 +186,7 @@ SCOUT_ROLE: dict[str, Any] = {
 
 
 def with_scout(t: Topology) -> Topology:
-    """The same team, plus a standing Scout that runs once and proposes refinements (§6.3)."""
+    """The same team, plus a standing Scout that runs once and proposes refinements (docs/design/analyst-teams.md, "The selector")."""
     d = t.to_dict()
     tid = d.pop("id", t.id)
     if "scout" in d["roles"]:

@@ -1,4 +1,4 @@
-# The World for the planted swarm (docs/WORLD_PLAN.md §6b). Thousands of agents in teams: dots and team blobs from
+# The World for the planted swarm (docs/design/world.md, "Presets: swarm"). Thousands of agents in teams: dots and team blobs from
 # afar, pawns at mid zoom, characters only when a few are in view. Every choice has a reason; people and the
 # world-designer can change anything with ops, and "Reset" brings this back.
 shape: swarm

@@ -226,3 +226,4 @@ report.md`.
 - Turn on Claude in step 2 and compare its findings and summaries with the rules-only run.
 - Read the [technical reference](REFERENCE.md) for every setting, file and API, including how to score a report
   against MessageBoardAuditBench.
+- The [design notes](design/) explain why each part is built the way it is.

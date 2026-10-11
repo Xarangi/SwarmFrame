@@ -164,7 +164,7 @@ From the command line:
 On [MessageBoardAuditBench](https://github.com/hamzah2304/messageboardauditbench) the parallel Claude writer
 roughly doubles the score of the earlier single-session writer (judged locally, so not comparable to the
 leaderboard). How to run it, and the results so far, are in
-[the technical reference](docs/REFERENCE.md#testing-against-messageboardauditbench).
+[the technical reference](docs/REFERENCE.md#messageboardauditbench).
 
 ## The sources it ships with
 
@@ -223,7 +223,8 @@ instruction to SwarmFrame's own agents.
 
 - [Guide](docs/GUIDE.md): a walk through the dashboard, screen by screen, and the analysis mode.
 - [Technical reference](docs/REFERENCE.md): every part of the system, its settings and its files.
-- Design notes: [the dashboard](docs/UI_PLAN.md), [the World](docs/WORLD_PLAN.md),
-  [the analyst teams](docs/OVERSIGHT_ARCHITECTURES.md), [reading at scale](docs/STRATEGY.md).
+- Design notes, the reasoning behind each part: [architecture and the evidence boundary](docs/design/architecture.md),
+  [the dashboard](docs/design/dashboard.md), [the World](docs/design/world.md),
+  [analyst teams](docs/design/analyst-teams.md), [reading at scale](docs/design/reading-at-scale.md).
 
 Run the tests with `.venv/Scripts/python -m pytest tests -q`.

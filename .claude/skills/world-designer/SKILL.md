@@ -43,7 +43,7 @@ whatever the stream lets us recover. Your first job is to find out what that is.
    Never choose `characters` for more than ~80 units in view. A unit model you make is drawn only in the characters
    tier (and for the ~40 agents nearest the camera when zoomed in); pawns and dots stay as they are, so a custom
    character never costs anything at scale. Landmark and scenery models are compiled once and instanced. Trails are
-   drawn only for the ~200 most-moved units. Labels appear only near the camera. The layout runs on the server in
+   drawn only for flagged units and the 30 that moved most. Labels appear only near the camera. The layout runs on the server in
    numpy (≈20–40 ms per window at 1,000 units), so do not ask for per-unit work that scales with the square of the
    population.
 10. **When to make a model.** Make one when the stream's agents or places have a kind that no premade character or

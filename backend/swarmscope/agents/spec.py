@@ -119,14 +119,14 @@ class Topology:
                                                              "split_when_events_over": 400})
     triage: dict[str, Any] = field(default_factory=dict)  # reads_per_cycle, weights, lanes, coverage_every_cycles
     authority: dict[str, Any] = field(default_factory=dict)  # alerts_per_cycle, interrupts_per_day, ack_sla_windows, quiet_windows
-    # the grammar of docs/OVERSIGHT_ARCHITECTURES.md §4; all optional, today's behaviour when absent
+    # the grammar of docs/design/analyst-teams.md, "The topology spec"; all optional, today's behaviour when absent
     partition: dict[str, Any] = field(default_factory=dict)  # by: cohort|field|resource_cluster|group|family|none, field, span, min_events
     levels: list[dict[str, Any]] = field(default_factory=list)  # [{role, span}]: readers inserted while span is exceeded (first level = sectors)
     standing: list[dict[str, Any]] = field(default_factory=list)  # [{role, scope, brief}]: spawned at start and kept
     questions: dict[str, str] = field(default_factory=dict)  # pack question kind -> role that answers it; '*' is the fallback
     cadence: dict[str, Any] = field(default_factory=dict)  # kind: windows|records|events, every
     human: dict[str, Any] = field(default_factory=dict)  # briefing_every, interrupt_at, approvals
-    envelope: dict[str, Any] = field(default_factory=dict)  # what the director may improvise alone (§6.6)
+    envelope: dict[str, Any] = field(default_factory=dict)  # what the director may improvise alone (docs/design/analyst-teams.md, "Proposals and the envelope")
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)

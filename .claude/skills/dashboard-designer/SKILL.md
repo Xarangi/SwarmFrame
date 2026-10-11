@@ -16,7 +16,7 @@ cannot show it.
   "needs attention" list with a recommended next step on every row, and a short "what changed" line. You configure
   those with `set_brief` (`glance`, `attention_rows`, `min_severity`, `show_changes`, `world`: the World beside the attention list). Its own panels are **one or
   two signature views**: the views that best show this particular stream at a glance.
-- **Activity pages** hold the stream's own structure. **At most three** when composing from scratch, each with a
+- **Pages** (listed under Pages in the rail) hold the stream's own structure. **At most three** when composing from scratch, each with a
   one-line `reason` saying why this stream earned it ("no identities, so targets and methods describe the population").
 - **The machinery** (reading plan, groups of similar agents, coverage, the analyst team, monitor health) lives under
   the hood. Do not compose it onto pages unless the viewer asks; `set_machinery` adds it as one page.

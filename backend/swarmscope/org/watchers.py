@@ -490,7 +490,8 @@ class ResourceBurst(Watcher):
 
 
 class SpatialDrift(Watcher):
-    """The World's spatial features, above their null model, as observations (docs/WORLD_PLAN.md §3.3, §5).
+    """The World's spatial features, above their null model, as observations
+    (docs/design/world.md, "What the World feeds back").
 
     An agent whose position moved further over the last six windows than 95% of agents in a shuffled swarm has
     changed how it behaves or whom it works with; a group whose spread jumps is coming apart. Positions use derived

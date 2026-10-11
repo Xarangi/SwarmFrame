@@ -1,4 +1,4 @@
-"""The scene a stream lives in, and what its units do each window (docs/WORLD_PLAN.md, "Environment and activity").
+"""The scene a stream lives in, and what its units do each window (docs/design/world.md, "Scene and activity").
 
 environment  ground style, zones (soft tinted regions around matching places, with a label) and props placed from the
              generic asset library (world/assets.py) or from prop models made for this stream. Decoration that

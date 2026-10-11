@@ -73,7 +73,7 @@ function DashboardSettings() {
       <section className="panel"><div className="panel-head"><span className="title">Display</span></div>
         <div className="panel-body stack">
           <label className="row" style={{ gap: 10 }}>
-            <Toggle on={dash.spec.machinery} onChange={(v) => dashOps([{ op: 'set_machinery', on: v }], v ? 'showed the machinery' : 'hid the machinery', v ? 'Added “The machinery” under Activity' : 'Removed “The machinery”')} />
+            <Toggle on={dash.spec.machinery} onChange={(v) => dashOps([{ op: 'set_machinery', on: v }], v ? 'showed the machinery' : 'hid the machinery', v ? 'Added “The machinery” to Pages' : 'Removed “The machinery”')} />
             <span><b>Show the machinery</b><br /><span className="muted" style={{ fontSize: 12.5 }}>The reading plan, groups, coverage and analyst team as full panels on a page, for the level of detail an operator of SwarmFrame wants.</span></span>
           </label>
         </div>

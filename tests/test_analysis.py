@@ -183,3 +183,12 @@ def test_a_failed_claude_writer_keeps_the_rules_report(tmp_path, monkeypatch):
     job = asyncio.run(jobs.run_blocking(str(d), {"write": "claude"}))
     assert job.status == "done" and job.markdown and not job.written
     assert "signed out" in job.writer_error and job.public()["writer_error"] == job.writer_error
+
+
+def test_asking_for_auto_runs_the_selector():
+    """`auto` by name gets the selector's pick (not the org default), with its reasons."""
+    from swarmscope.engine import Engine
+    e = Engine("swarm_scale", "default", slice_override={"agents": 400, "hours": 4},
+               overrides={"llm.mode": "stub", "agents.topology": "auto"})
+    ch = e.team_choice
+    assert ch["by"] == "selector" and ch["reasons"] and ch["topology"].id == ch["would_pick"]

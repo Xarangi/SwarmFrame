@@ -1,6 +1,6 @@
 """The layout model: where a unit stands is a measurement.
 
-Two levels (docs/WORLD_PLAN.md §3):
+Two levels (docs/design/world.md, "Layout"):
   1. Cohort anchors, deterministic. A cohort's signature (dominant family, action, group) fixes its anchor on a
      wheel: the family picks an angular sector from a fixed 16-slot order, the group picks a radial band and an
      offset inside the sector. "shell agents of team-07" therefore sit in the same region in every run.

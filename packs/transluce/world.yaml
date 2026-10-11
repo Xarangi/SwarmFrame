@@ -1,4 +1,4 @@
-# The World for Transluce: a map of what autonomous agents reached, and how (docs/WORLD_PLAN.md §6b).
+# The World for Transluce: a map of what autonomous agents reached, and how (docs/design/world.md, "Presets: targets").
 # This is a historical catalog with no agent identities, so the units are TARGETS (the data sources agents went
 # after), never agents. Each method class is a corner of the map; each target stands where its whole-record mix
 # of methods puts it. Tall towers are the most reported targets; bands show how they were reached; glass means the

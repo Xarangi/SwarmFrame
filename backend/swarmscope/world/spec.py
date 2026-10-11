@@ -1,5 +1,5 @@
-"""WorldSpec: what the World draws for one stream (docs/WORLD_PLAN.md §14-17), composed from the premade library
-plus any models the designer made for this stream (world/models.py).
+"""WorldSpec: what the World draws for one stream (docs/design/world.md, "World spec"), composed from the premade
+library plus any models the designer made for this stream (world/models.py).
 
 The designer (free or Claude) and people edit it with validated, atomic, versioned ops, the same discipline as
 dashboard specs. Presets live in packs/<id>/world.yaml; streams without one get a composed default.
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 WORLD_DIR = ROOT / "data" / "worlds"
 
-# ---------------------------------------------------------------- the fixed library (§14), as data
+# ------------------------------------------------- the fixed library (docs/design/world.md, "World spec"), as data
 UNIT_MODELS = {
     "sprite": "an agent with a stable identity: a small character, tinted by workstream, posed by state",
     "plinth": "a unit that is a place rather than an actor (a target, a page): a column whose height is activity",
@@ -142,7 +142,7 @@ class WorldError(ValueError):
     pass
 
 
-# ---------------------------------------------------------------- validation (§16, §17)
+# -------------------------------------------------------- validation (docs/design/world.md, "Encoding grammar")
 def validate(spec: WorldSpec, table: dict[str, dict[str, str]]) -> list[str]:
     """Raise WorldError on a hard violation; return soft warnings. Fills each binding's status from the table."""
     if spec.shape not in SHAPES:

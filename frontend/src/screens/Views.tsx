@@ -89,8 +89,6 @@ export function PageEditMenu({ page, edit, setEdit, onRename, extra = [] }: {
     { label: edit ? 'Done arranging' : 'Arrange panels', icon: 'grip', hint: 'resize, reorder, remove', onClick: () => setEdit(!edit) },
     ...extra,
     ...(!isBrief && onRename ? [{ label: 'Rename page', icon: 'edit', onClick: onRename }] : []),
-    ...(!isBrief ? [{ label: page.nav === 'top' ? 'Move under Activity' : 'Give it its own nav entry', icon: 'layers',
-      onClick: () => dashOps([{ op: 'update_page', page: page.id, nav: page.nav === 'top' ? 'activity' : 'top' }], 'moved a page in the nav', 'Moved in the nav') }] : []),
     ...(!isBrief && siblings.length > 1 ? [
       { label: 'Move up in the nav', icon: 'arrow', disabled: pos <= 0, onClick: () => move(-1) },
       { label: 'Move down in the nav', icon: 'down', disabled: pos >= siblings.length - 1, onClick: () => move(1) }] : []),

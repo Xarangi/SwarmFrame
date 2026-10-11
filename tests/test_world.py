@@ -1,4 +1,4 @@
-"""The World (docs/WORLD_PLAN.md): availability grading, the layout, the null model, the spec grammar, presets,
+"""The World (docs/design/world.md): availability grading, the layout, the null model, the spec grammar, presets,
 composition for poor streams, and the feedback into analysts."""
 from __future__ import annotations
 

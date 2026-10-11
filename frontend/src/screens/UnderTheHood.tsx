@@ -46,8 +46,8 @@ export function UnderTheHood({ s }: { s: Snapshot }) {
         </div>
         {dash && (
           <label className="row machinery-switch">
-            <Toggle on={dash.spec.machinery} onChange={(v) => dashOps([{ op: 'set_machinery', on: v }], v ? 'showed the machinery' : 'hid the machinery', v ? 'Added “The machinery” under Activity' : 'Removed “The machinery”')} />
-            <span>Show as a page under Activity</span>
+            <Toggle on={dash.spec.machinery} onChange={(v) => dashOps([{ op: 'set_machinery', on: v }], v ? 'showed the machinery' : 'hid the machinery', v ? 'Added “The machinery” to Pages' : 'Removed “The machinery”')} />
+            <span>Show as a page</span>
           </label>
         )}
       </header>

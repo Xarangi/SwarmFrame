@@ -4,7 +4,7 @@ Each is the full WorldSpec we ship for a known source, with its reasons. Start f
 ## Planted swarm (shape: swarm)
 
 ```yaml
-# The World for the planted swarm (docs/WORLD_PLAN.md §6b). Thousands of agents in teams: dots and team blobs from
+# The World for the planted swarm (docs/design/world.md, "Presets: swarm"). Thousands of agents in teams: dots and team blobs from
 # afar, pawns at mid zoom, characters only when a few are in view. Every choice has a reason; people and the
 # world-designer can change anything with ops, and "Reset" brings this back.
 shape: swarm
@@ -57,7 +57,7 @@ reasons:
 ## AI Village (shape: village)
 
 ```yaml
-# The World for AI Village (docs/WORLD_PLAN.md §6b, preset 1). About twenty named agents who talk: every agent is
+# The World for AI Village (docs/design/world.md, "Presets: village"). About twenty named agents who talk: every agent is
 # a character, rooms are plazas, and replies pull agents together more than behavioural similarity does.
 shape: village
 unit: {model: sprite, of: actor, alpha_by: null}
@@ -109,49 +109,69 @@ reasons:
 
 ## Transluce (shape: targets)
 
+The shipped preset (`packs/transluce/world.yaml`): a map of targets laid out by their method mix.
+
 ```yaml
-# The World for Transluce (docs/WORLD_PLAN.md §6b, preset 2). There are no agents to move: each target is a
-# plinth, method classes are roads radiating from the centre, and targets stand along the roads that reach them.
+# The World for Transluce: a map of what autonomous agents reached, and how (docs/design/world.md, "Presets: targets").
+# This is a historical catalog with no agent identities, so the units are TARGETS (the data sources agents went
+# after), never agents. Each method class is a corner of the map; each target stands where its whole-record mix
+# of methods puts it. Tall towers are the most reported targets; bands show how they were reached; glass means the
+# catalog only calls the reports on it suggestive.
 shape: targets
 unit: {model: plinth, of: object, alpha_by: grade}
 render: {tier: auto, max_characters: 0, character_by: none, character: newt}
 metric:
-  sentence: "Distance: targets reached by the same methods in the same weeks stand together, along those methods' roads."
+  sentence: "Each tower is a targeted data source. The corners are the three ways agents reached targets; a tower stands near the methods used on it."
+  layout: mix
   forces: {anchor: 0.35, landmark: 1.2, interact: 0.0, similar: 0.6, repel: 0.6, max_step: 0.08}
   interactions: []
   trail_windows: 8
 landmarks_from: family
 landmarks:
-  - {match: {kind: other}, archetype: road, label: method, reason: "each method class is a road; a target reached by several methods sits near a junction"}
+  - {match: {kind: other}, archetype: road, label: method, reason: "each method class is an axis from the centre to its corner"}
 territories: {by: none}
 bindings:
-  - {channel: position, quantity: cohort, legend: "Distance: targets reached by the same methods in the same weeks stand together."}
-  - {channel: height, quantity: activity_z, transform: "clamp(-1,3)", legend: "Height: reports on this target now, compared with its own usual (a spike is a burst)."}
-  - {channel: colour, quantity: family_dominant, legend: "Cap colour: the method that reaches it most."}
-  - {channel: ring, quantity: severity, legend: "Ring: part of a finding (grey watch, amber look, red act)."}
-  - {channel: trail, quantity: displacement, legend: "Trail: the target's method mix changed."}
-  - {channel: material, quantity: grade, legend: "Solid: the catalog rates reports on it significant; glassy: only suggestive."}
-  - {channel: fog, quantity: coverage_age, legend: "Fog: no analyst has read this group of targets closely for a while."}
+  - {channel: position, quantity: cohort, legend: "Position: a tower stands between the corners in proportion to the methods used on it; at a corner, only that method."}
+  - {channel: height, quantity: volume, transform: "log", legend: "Height: how many reports name this target over the whole record (log scale)."}
+  - {channel: colour, quantity: family_dominant, legend: "Bands: the share of its reports by each method, bottom to top in the order of the corners."}
+  - {channel: material, quantity: grade, legend: "Solid: most reports on it are graded significant; glassy: mostly suggestive."}
+  - {channel: ring, quantity: severity, legend: "Ring: part of a finding, such as a burst (grey watch, amber look, red act)."}
+  - {channel: trail, quantity: displacement, legend: "Trail: the target's method mix shifted recently."}
 relations: []
-coverage_fog: true
+coverage_fog: false
 null_model: {windows: 24, quantile: 0.95}
 scenes:
-  - {id: map, title: The map of targets, camera: overview, question: "Which methods reach which targets?", opening: true}
-  - {id: bursts, title: This week's bursts, camera: top, target: activity, finding_kind: burst, question: "Which targets spiked?"}
-  - {id: new, title: New methods, camera: top, target: new_roads, finding_kind: new_method, question: "Which methods appeared on targets for the first time?"}
-  - {id: grades, title: Grades over time, camera: sweep, question: "Do grades rise or fall as reports pile up?"}
+  - {id: map, title: The map of targets, camera: overview, question: "What did agents go after, and how?", opening: true}
+  - {id: bursts, title: Bursts, camera: top, target: activity, finding_kind: burst, question: "Which targets spiked recently?"}
 control: {enabled: false}
+# The scene: no characters (there are no agent identities). A paved square at each method's corner, muted city
+# blocks across the map, rocks at the edge. Decoration only; towers stay where their method mix puts them.
+environment:
+  ground: sand
+  zones:
+    - {name: methods, around: {archetype: road}, style: paving, label: methods}
+  props:
+    - {asset: path_tiles, at: zones, near: {zone: methods}, count: 3, meaning: "decoration: paths at each method's corner"}
+    - {asset: signpost, at: landmarks, near: {archetype: road}, count: 1, meaning: "decoration: a signpost at each method"}
+    - {asset: office_block, at: scatter, count: 10, meaning: "decoration: muted city blocks"}
+    - {asset: rock, at: rim, count: 16, meaning: "decoration: the edge of the map"}
+# Targets are places, so they cannot walk: they pulse.
+behaviours:
+  - {id: reported, when: active, do: pulse, meaning: "A ring pulses under a target when new reports name it this window."}
 reasons:
-  shape: "no agent identities: targets carry the story, so units are places"
-  render: "thousands of targets at most: plinths, instanced"
-  forces: "methods (roads) pull hardest; similarity of method mix second; there are no interactions between targets"
+  shape: "no agent identities: targets carry the story, so units are places (towers)"
+  layout: "with three methods and about forty targets, a deterministic mix map is readable at a glance; a force layout was not"
+  render: "tens of targets: every tower labelled"
+  forces: "positions come from each target's method mix, not from forces"
   control: "a public catalog: read-only"
+  environment: "a sand map with a paved square at each method's corner and muted city blocks; decoration only"
+  behaviours: "targets are places, not actors: they pulse when new reports name them"
 ```
 
 ## Live Claude Code (shape: swarm_control)
 
 ```yaml
-# The World for a live Claude Code swarm (docs/WORLD_PLAN.md §6b, preset 5). The village shape plus control:
+# The World for a live Claude Code swarm (docs/design/world.md, "Presets: swarm_control"). The village shape plus control:
 # files are slabs, tools colour the agents, denials show as blocked, and clicking an agent offers the Control
 # page's actions (with the same approval rules).
 shape: swarm_control
@@ -197,7 +217,7 @@ reasons:
   control: "the control plane is attached: pause, interrupt, message and stop from the World, with approvals"
 ```
 
-## German Wiki (shape: wiki), planned
+## German Wiki (shape: wiki)
 
 The adapter is parked until the export format is probed. Designed against the documented shape: about 3.1k handles
 on 4.6k pages; sprites at alpha 0.55 because a handle is not a stable agent; pages as slabs grouped into namespace

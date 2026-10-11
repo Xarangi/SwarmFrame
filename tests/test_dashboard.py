@@ -1,4 +1,5 @@
-"""Customising views (docs/UI_PLAN.md): pages, panels, the Brief's settings, lenses, undo and persistence."""
+"""Customising views (docs/design/dashboard.md, "Customizing the layout"): pages, panels, the Brief's settings,
+lenses, undo and persistence."""
 from __future__ import annotations
 
 import asyncio

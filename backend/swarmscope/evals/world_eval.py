@@ -1,4 +1,4 @@
-"""World evaluation (docs/WORLD_PLAN.md §10, H1 and H3): does position carry the planted behaviours, beyond chance?
+"""World evaluation (docs/design/world.md, "Evaluation"): does position carry the planted behaviours, beyond chance?
 
 For each planted behaviour in the swarm_scale generator, in the windows after its onset:
   auc_<feature>   how well a spatial feature ranks planted agents above the others (0.5 = chance), best window
@@ -6,7 +6,7 @@ For each planted behaviour in the swarm_scale generator, in the windows after it
                   control set of the same size (ratio < 1 means they gathered; planted vs control)
   flagged         share of planted agents that received a spatial flag (above the null's family-wise threshold)
 and before any behaviour starts:
-  false_flags_per_window   spatial flags per window when nothing is planted (H3: should be near zero)
+  false_flags_per_window   spatial flags per window when nothing is planted (should be near zero)
 """
 from __future__ import annotations
 

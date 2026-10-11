@@ -1,6 +1,6 @@
-/* The World renderer. Everything visible is bound to a measured quantity (docs/WORLD_PLAN.md §2b); this file only
- * draws what the server computed. Units render in three tiers chosen by population and zoom, so thousands of
- * agents stay at 60 fps:
+/* The World renderer. Everything visible is bound to a measured quantity (docs/design/world.md, "Encodings");
+ * this file only draws what the server computed. Units render in three tiers chosen by population and zoom, so
+ * thousands of agents stay at 60 fps:
  *   characters  the cast (characters.ts), ~30 meshes each: small populations, or the few nearest the camera
  *   pawns       one InstancedMesh body + one head: hundreds to ~2,000 units
  *   dots        one Points cloud + cohort blobs from afar: thousands of units

@@ -204,7 +204,7 @@ function Msg({ m }: { m: ChatMsg }) {
             {x.explain?.why && <details className="ev-why"><summary>Why it may matter</summary>{x.explain.why} <span className="muted">Innocent reading: {x.explain.benign}</span></details>}
           </div>
         ))}
-        {items.length > 3 && <div className="mono muted" style={{ fontSize: 11, marginTop: 6 }}>and {items.length - 3} more · see Attention</div>}
+        {items.length > 3 && <div className="mono muted" style={{ fontSize: 11, marginTop: 6 }}>and {items.length - 3} more · see Findings</div>}
       </div>
     )
   }

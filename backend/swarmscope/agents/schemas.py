@@ -68,7 +68,7 @@ _NEW_ROLE = {"type": "object", "properties": {
     "reason": {"type": "string"}},
     "required": ["id", "title", "prompt", "tools", "reason"]}
 
-# The Scout's report (docs/OVERSIGHT_ARCHITECTURES.md §6.3): a team shape as data, validated before anything applies.
+# The Scout's report (docs/design/analyst-teams.md, "Proposals and the envelope"): a team shape as data, validated before anything applies.
 ARCHITECTURE_PROPOSAL = {"type": "object", "properties": {
     "headline": {"type": "string"},
     "base": {"type": "string", "description": "a library topology id to build on"},

@@ -1,4 +1,4 @@
-# The World for the German message board (docs/WORLD_PLAN.md, preset 3). Handles are partial identities, so they are
+# The World for the German message board (docs/design/world.md, "Presets: wiki"). Handles are partial identities, so they are
 # drawn translucent; pages are places grouped by namespace; the question pages are where the June convergence happens;
 # moderator deletions arrive as beams; reused text draws lineage arcs.
 shape: wiki

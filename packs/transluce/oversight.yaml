@@ -1,4 +1,4 @@
-# The team preset that suits this source, and why (the default team is the lead analyst with explorers; pick this preset in compose to use it) (docs/OVERSIGHT_ARCHITECTURES.md §5.3).
+# The team preset that suits this source, and why (the default team is the lead analyst with explorers; pick this preset in compose to use it) (docs/design/analyst-teams.md, "The presets").
 preset: catalog_review
 reason: a catalog of reports about targets with no agent identities; cycles follow the record, not the clock
 overrides:

@@ -127,7 +127,7 @@ async def _read(job: Job, run: Run, k: int, n_runs: int) -> None:
     t0 = time.time()
     run.status = "loading"
     overrides = {"llm.mode": s.get("llm", "stub"), "investigations.node_delay_s": 0, "agents.stub_delay_s": 0}
-    if s.get("team") and s["team"] != "auto" and s.get("composer") != "claude":
+    if s.get("team") and s.get("composer") != "claude":            # "auto" asks the selector
         overrides["agents.topology"] = s["team"]
     slice_override = None
     if job.source == "dump" and o.get("mapping"):

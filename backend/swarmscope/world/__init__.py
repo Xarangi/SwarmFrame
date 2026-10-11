@@ -1,4 +1,4 @@
-"""The World: a spatial model of the swarm where position is a measurement (docs/WORLD_PLAN.md).
+"""The World: a spatial model of the swarm where position is a measurement (docs/design/world.md).
 
 features.py   what this stream can tell us, graded observed / derived / inferred / absent, plus cohort labels
 layout.py     the two-level embedding (deterministic cohort anchors + bounded forces), spatial features, null model

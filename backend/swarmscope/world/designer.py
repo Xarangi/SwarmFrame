@@ -1,8 +1,8 @@
 """Who designs the World for a stream.
 
-compose_world      free and deterministic: the decision procedure of the world-designer skill (§18.2) as fixed rules.
-                   Reads the availability table, picks the nearest shape, adapts its defaults, writes a reason for
-                   every choice. Same input, same world.
+compose_world      free and deterministic: the world-designer skill's decision procedure as fixed rules
+                   (docs/design/world.md, "Choosing a shape"). Reads the availability table, picks the nearest shape,
+                   adapts its defaults, writes a reason for every choice. Same input, same world.
 run_world_designer one Claude Code session with the world tools and the world-designer skill; it reasons through the
                    same procedure, previews, and applies ops. Every op is validated and versioned.
 """
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 def pick_shape(t: dict[str, dict[str, str]], n_units: int) -> tuple[str, str]:
-    """§18.2, first match wins."""
+    """docs/design/world.md, "Choosing a shape": first match wins."""
     st = lambda k: t.get(k, {}).get("status", "absent")  # noqa: E731
     if st("identity") == "absent" and st("resources") != "absent":
         return "targets", "no persistent identities, but places: units are places (plinths), methods are roads"

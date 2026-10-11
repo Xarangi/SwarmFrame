@@ -15,7 +15,15 @@ import httpx
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PORT = 8797
+def _free_port() -> int:
+    """A port nothing else is listening on (a fixed one collides with other local servers)."""
+    import socket
+    with socket.socket() as so:
+        so.bind(("127.0.0.1", 0))
+        return so.getsockname()[1]
+
+
+PORT = _free_port()
 URL = f"http://127.0.0.1:{PORT}"
 PY = str(ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python"))
 

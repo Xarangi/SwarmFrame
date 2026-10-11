@@ -1,4 +1,4 @@
-# The World for a live Claude Code swarm (docs/WORLD_PLAN.md §6b, preset 5). The village shape plus control:
+# The World for a live Claude Code swarm (docs/design/world.md, "Presets: swarm_control"). The village shape plus control:
 # files are slabs, tools colour the agents, denials show as blocked, and clicking an agent offers the Control
 # page's actions (with the same approval rules).
 shape: swarm_control

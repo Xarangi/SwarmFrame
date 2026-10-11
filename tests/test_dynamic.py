@@ -1,4 +1,4 @@
-"""The dynamic side (docs/OVERSIGHT_ARCHITECTURES.md §6.3–6.6): proposals, the envelope, the approvals queue,
+"""The dynamic side (docs/design/analyst-teams.md, "Proposals and the envelope"): proposals, the envelope, the approvals queue,
 applying between cycles, revert, the Scout's architecture_proposal, and promoting a team to a preset."""
 from __future__ import annotations
 

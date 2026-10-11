@@ -1,4 +1,4 @@
-"""Proposals, the envelope and approvals: how a team changes its own shape (docs/OVERSIGHT_ARCHITECTURES.md §6.3–6.6).
+"""Proposals, the envelope and approvals: how a team changes its own shape (docs/design/analyst-teams.md, "Proposals and the envelope").
 
 A director or the Scout may *propose*: a new role (`propose_role`), a change to the grammar blocks (`propose_change`:
 partition, levels, standing, questions, cadence, human, authority, triage), or a different base topology. Every

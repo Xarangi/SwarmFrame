@@ -957,7 +957,7 @@ async def design(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     return await dashboard_design({"instruction": instruction, "force": True, "orient": False, "scope": scope})
 
 
-# ------------------------------------------------------------------ the World (docs/WORLD_PLAN.md)
+# ------------------------------------------------------------------ the World (docs/design/world.md)
 @app.get("/api/world/state")
 def world_state(ids: int = 1, labels: int = 0) -> dict[str, Any]:
     """Compact per-window state for the renderer: typed arrays as base64, landmarks, relations, cohorts.

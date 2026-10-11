@@ -1,4 +1,4 @@
-"""Oversight architectures (docs/OVERSIGHT_ARCHITECTURES.md): the topology grammar, the static library, per-pack
+"""Oversight architectures (docs/design/analyst-teams.md, "The topology spec" and "Which team a source gets"): the topology grammar, the static library, per-pack
 oversight.yaml, the selector's explained choice, field partitions, standing roles and record-batch cadence."""
 from __future__ import annotations
 
